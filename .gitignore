@@ -1,0 +1,15 @@
+# Node modules (for both React and Express)
+node_modules/
+
+# Build folder (React)
+build/
+
+# Environment variables
+.env
+
+# Logs
+*.log
+
+# OS-specific files
+.DS_Store
+Thumbs.db
