@@ -8,7 +8,14 @@ import postRoutes from "./routes/postRoutes.js";
 import friendsRoutes from "./routes/friendsRoutes.js";
 import chatsRoutes from "./routes/chatsRoutes.js";
 const app = express();
-app.use(cors());
+app.use(
+  cors({
+    origin: ["https://social-media-project-one.vercel.app/"],
+    credentials: true,
+  })
+);
+
+
 app.use(express.json());
 
 app.use("/api", authRoutes);
@@ -66,5 +73,6 @@ io.on("connection", (socket) => {
     }
   });
 });
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+
