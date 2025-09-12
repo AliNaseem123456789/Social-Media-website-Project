@@ -25,7 +25,7 @@ function FriendRequestsPage() {
   const fetchRequests = async () => {
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/friends/pending/${currentUserId}`
+        `https://social-media-website-project.onrender.com/api/friends/pending/${currentUserId}`
       );
       setRequests(res.data);
     } catch (err) {
@@ -42,7 +42,7 @@ function FriendRequestsPage() {
   // Accept/Reject handler
   const handleRespond = async (friendship_id, status) => {
     try {
-      await axios.post("http://localhost:5000/api/friends/respond", {
+      await axios.post("https://social-media-website-project.onrender.com/api/friends/respond", {
         friendship_id,
         status,
       });

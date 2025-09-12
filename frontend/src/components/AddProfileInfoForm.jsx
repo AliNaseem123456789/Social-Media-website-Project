@@ -34,7 +34,7 @@ function AddProfileInfoForm({ open, handleClose, userId, onSaved }) {
   useEffect(() => {
     if (open) {
       axios
-        .get(`http://localhost:5000/api/profile/${userId}`)
+        .get(`https://social-media-website-project.onrender.com/api/profile/${userId}`)
         .then((res) => {
           const profile = res.data.profile;
           if (profile) {
@@ -58,7 +58,7 @@ function AddProfileInfoForm({ open, handleClose, userId, onSaved }) {
     setLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:5000/api/posts/profile/add", {
+      const res = await axios.post("https://social-media-website-project.onrender.com/api/posts/profile/add", {
         user_id: userId,
         username,
         bio,

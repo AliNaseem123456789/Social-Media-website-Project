@@ -31,7 +31,7 @@ function Profile() {
   const fetchProfile = async () => {
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/posts/profile/${userId}`
+        `https://social-media-website-project.onrender.com/api/posts/profile/${userId}`
       );
       setProfile(res.data.profile);
     } catch (err) {
@@ -51,7 +51,7 @@ function Profile() {
       async function fetchFriends() {
         try {
           const res = await axios.get(
-            `http://localhost:5000/api/friends/${currentUserId}`
+            `https://social-media-website-project.onrender.com/api/friends/${currentUserId}`
           );
           setFriendsList(res.data);
         } catch (err) {
@@ -70,7 +70,7 @@ function Profile() {
 
   const handleSendFriendRequest = async () => {
     try {
-      await axios.post("http://localhost:5000/api/friends/request", {
+      await axios.post("https://social-media-website-project.onrender.com/api/friends/request", {
         requester_id: currentUserId,
         recipient_id: Number(userId),
       });

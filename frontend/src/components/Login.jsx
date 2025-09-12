@@ -23,7 +23,7 @@ function LoginPopup({ open, handleClose, openSignup }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("http://localhost:5000/api/login", { email, password });
+      const res = await axios.post("https://social-media-website-project.onrender.com/api/login", { email, password });
       localStorage.setItem("user_id", res.data.user_id);
       localStorage.setItem("username", res.data.username);
       setMessage(res.data.message);

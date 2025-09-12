@@ -17,7 +17,7 @@ function PostWrite() {
         return;
       }
 
-      const res = await axios.post("http://localhost:5000/api/posts", {
+      const res = await axios.post("https://social-media-website-project.onrender.com/api/posts", {
         user_id,
         title,
         content

@@ -29,7 +29,7 @@ function PostDetails() {
     async function fetchPost() {
       try {
         const response = await axios.get(
-          `http://localhost:5000/api/posts/fullpost/${id}`
+          `https://social-media-website-project.onrender.com/api/posts/fullpost/${id}`
         );
         setPost(response.data);
       } catch (error) {
