@@ -2,6 +2,7 @@ import express from "express";
 const router = express.Router();
 import bcrypt from "bcrypt";
 import supabase from "../supabaseClient.js";
+import { OAuth2Client } from "google-auth-library";
 
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
@@ -55,5 +56,60 @@ router.post("/signup", async (req, res) => {
   }
   catch(err){ res.status(500).json({ success: false, message: "Database error " });}
 });
+
+// Google client setup
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+router.post("/google", async (req, res) => {
+  const { token } = req.body; // token sent by frontend
+
+  try {
+    // Verify token with Google
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    // Extract user info
+    const payload = ticket.getPayload();
+    const { email, name } = payload;
+
+    // Check if user already exists
+    const { data: users, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("email", email)
+      .limit(1);
+
+    if (error) throw error;
+
+    let user;
+    if (users && users.length > 0) {
+      user = users[0];
+    } else {
+      // If not, insert new user (password is null since it’s Google)
+      const { data, error: insertError } = await supabase
+        .from("users")
+        .insert([{ username: name, email, password: null }])
+        .select("id, username, email")
+        .single();
+
+      if (insertError) throw insertError;
+      user = data;
+    }
+
+    // Send response to frontend
+    res.json({
+      success: true,
+      message: "Google login successful",
+      user_id: user.id,
+      username: user.username,
+    });
+  } catch (err) {
+    console.error("Google login error:", err);
+    res.status(401).json({ success: false, message: "Google login failed" });
+  }
+});
+
 
 export default router;

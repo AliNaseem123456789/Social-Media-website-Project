@@ -39,6 +39,15 @@ const SidebarWrapper = styled(Box)(({ theme }) => ({
 }));
 
 function Sidebar() {
+  
+  const handleLogout = () => {
+    // Clear saved user info
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("username");
+
+    // Redirect to login/signup
+    navigate("/");
+  };
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [open, setOpen] = useState(false);
@@ -51,7 +60,7 @@ function Sidebar() {
   { text: "My Posts", icon: <ArticleIcon />, path: `/myposts/${userId}` },
   { text: "Friend Requests", icon: <FavoriteIcon />, path: `/friendrequests/${userId}` },
   { text: "Friends", icon: <GroupIcon />, path: `/friendspage/${userId}` },
-  { text: "Logout", icon: <LogoutIcon />,  path: "/" },
+    { text: "Logout", icon: <LogoutIcon />,  action:handleLogout },
   { text: "More", icon: <MoreHorizIcon />, path: "/more" },
 ];
 

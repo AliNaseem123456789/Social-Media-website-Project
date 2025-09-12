@@ -1,7 +1,11 @@
 import React from "react";
 import Button from "@mui/material/Button";
-import GoogleIcon from "@mui/icons-material/Google"; // or use a custom Google SVG icon
+import GoogleIcon from "@mui/icons-material/Google";
 import { styled } from "@mui/material/styles";
+import { GoogleLogin } from "@react-oauth/google";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+
 const StyledGoogleButton = styled(Button)(({ theme }) => ({
   textTransform: "none",
   backgroundColor: "#fff",
@@ -18,11 +22,40 @@ const StyledGoogleButton = styled(Button)(({ theme }) => ({
     backgroundColor: "#f5f5f5",
   },
 }));
-const GoogleButton = ({ onClick }) => {
+
+const GoogleButton = () => {
+  const navigate = useNavigate(); 
+
   return (
-    <StyledGoogleButton startIcon={<GoogleIcon />} onClick={onClick}>
-      Continue with Google
-    </StyledGoogleButton>
+    <GoogleLogin
+      onSuccess={async (credentialResponse) => {
+        try {
+          const res = await axios.post("http://localhost:5000/api/google", {
+            token: credentialResponse.credential,
+          });
+          if (res.data.success) {
+            localStorage.setItem("user_id", res.data.user_id);
+            localStorage.setItem("username", res.data.username);
+            navigate("/home"); 
+          }
+        } catch (err) {
+          console.error("Google login error:", err);
+        }
+      }}
+      onError={() => {
+        console.log("Google login failed ❌");
+      }}
+      useOneTap
+      render={(renderProps) => (
+        <StyledGoogleButton
+          startIcon={<GoogleIcon />}
+          onClick={renderProps.onClick}
+          disabled={renderProps.disabled}
+        >
+          Continue with Google
+        </StyledGoogleButton>
+      )}
+    />
   );
 };
 
