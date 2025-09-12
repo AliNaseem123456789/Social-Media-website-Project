@@ -10,10 +10,11 @@ import chatsRoutes from "./routes/chatsRoutes.js";
 const app = express();
 app.use(
   cors({
-    origin: ["https://social-media-project-one.vercel.app/"],
+    origin: ["https://social-media-project-one.vercel.app"], 
     credentials: true,
   })
 );
+
 
 
 app.use(express.json());
@@ -25,7 +26,13 @@ app.use("/api",chatsRoutes)
 
 // Socket.IO Setup
 const server = createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server, {
+  cors: {
+    origin: ["https://social-media-project-one.vercel.app"],
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
 
 // Track online users: userId -> socketId
 const users = {};
