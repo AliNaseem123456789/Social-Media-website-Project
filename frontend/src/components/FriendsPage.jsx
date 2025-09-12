@@ -13,7 +13,7 @@ function FriendsPage() {
   useEffect(() => {
     async function fetchFriends() {
       try {
-        const response = await axios.get(`http://localhost:5000/api/friends/${currentUserId}`);
+        const response = await axios.get(`https://social-media-website-project.onrender.com/api/friends/${currentUserId}`);
         setFriends(response.data);
       } catch (error) {
         console.error("Error fetching friends:", error);

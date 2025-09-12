@@ -1,4 +1,3 @@
-import React from "react";
 import Button from "@mui/material/Button";
 import GoogleIcon from "@mui/icons-material/Google";
 import { styled } from "@mui/material/styles";
@@ -30,7 +29,7 @@ const GoogleButton = () => {
     <GoogleLogin
       onSuccess={async (credentialResponse) => {
         try {
-          const res = await axios.post("http://localhost:5000/api/google", {
+          const res = await axios.post("https://social-media-website-project.onrender.com/api/google", {
             token: credentialResponse.credential,
           });
           if (res.data.success) {

@@ -41,7 +41,7 @@ function RecentChats() {
   const fetchFriends = async () => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/friends/${currentUserId}`
+        `https://social-media-website-project.onrender.com/api/friends/${currentUserId}`
       );
       setFriends(response.data);
     } catch (error) {
@@ -52,7 +52,7 @@ function RecentChats() {
   const fetchRecentChats = async () => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/recentchat/${currentUserId}`
+        `https://social-media-website-project.onrender.com/api/recentchat/${currentUserId}`
       );
       setRecentChats(response.data);
     } catch (error) {

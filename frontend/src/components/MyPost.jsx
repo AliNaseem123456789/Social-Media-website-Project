@@ -28,7 +28,7 @@ function MyPosts() {
     async function fetchPosts() {
       try {
         const response = await axios.get(
-          `http://localhost:5000/api/posts/myposts/${userId}`
+          `https://social-media-website-project.onrender.com/api/posts/myposts/${userId}`
         );
         setPosts(response.data);
       } catch (error) {

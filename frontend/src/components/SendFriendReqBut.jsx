@@ -8,7 +8,7 @@ function SendFriendRequestButton({ currentUserId, otherUserId, onRequestSent }) 
     if (!currentUserId || !otherUserId) return;
     setLoading(true);
     try {
-      const res = await axios.post("http://localhost:5000/api/friends/request", {
+      const res = await axios.post("https://social-media-website-project.onrender.com/api/friends/request", {
         requester_id: currentUserId,
         recipient_id: otherUserId,
       });

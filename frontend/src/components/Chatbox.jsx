@@ -4,15 +4,15 @@ import { io } from "socket.io-client";
 import axios from "axios";
 import { Box, Paper, TextField, Button, Typography } from "@mui/material";
 import Navbar from "./Navbar";
-// Single Socket.IO instance
-const socket = io("http://localhost:5000");
+
+const socket = io("https://social-media-website-project.onrender.com");
 
 function ChatPage() {
-  const { user1, user2 } = useParams(); // two params from route
-  const currentUserId = localStorage.getItem("user_id"); // logged-in user
+  const { user1, user2 } = useParams(); 
+  const currentUserId = localStorage.getItem("user_id"); 
   const currentUsername = localStorage.getItem("username");
 
-  // figure out who is the other participant
+
   const toUserId = user1 === currentUserId ? user2 : user1;
 
   const [message, setMessage] = useState("");
@@ -43,7 +43,7 @@ function ChatPage() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/users/${toUserId}`);
+        const res = await axios.get(`https://social-media-website-project.onrender.com/api/users/${toUserId}`);
         setRecipientName(res.data.username);
       } catch (err) {
         console.error("Failed to fetch recipient:", err);
@@ -57,7 +57,7 @@ function ChatPage() {
     const fetchHistory = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:5000/api/chat/${currentUserId}/${toUserId}`
+          `https://social-media-website-project.onrender.com/api/chat/${currentUserId}/${toUserId}`
         );
         const formatted = res.data.map((msg) => ({
           from: msg.from_user === currentUserId ? "Me" : msg.username || recipientName || msg.from_user,

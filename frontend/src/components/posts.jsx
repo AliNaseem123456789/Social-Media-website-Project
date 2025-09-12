@@ -19,7 +19,7 @@ function Feed() {
   // Fetch posts with their full comments
   const fetchPosts = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/posts");
+      const response = await axios.get("https://social-media-website-project.onrender.com/api/posts");
       const postsData = response.data;
 
       // Fetch full comments for each post
@@ -27,7 +27,7 @@ function Feed() {
         postsData.map(async (post) => {
           try {
             const fullPostRes = await axios.get(
-              `http://localhost:5000/api/posts/fullpost/${post.id}`
+              `https://social-media-website-project.onrender.com/api/posts/fullpost/${post.id}`
             );
             const fullPost = fullPostRes.data;
             return { ...post, comments: fullPost.comments || [] };
@@ -59,7 +59,7 @@ function Feed() {
     }
 
     try {
-      const res = await axios.post("http://localhost:5000/api/posts/like", {
+      const res = await axios.post("https://social-media-website-project.onrender.com/api/posts/like", {
         user_id: userId,
         post_id: postId,
       });
