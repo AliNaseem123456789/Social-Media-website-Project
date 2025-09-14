@@ -75,7 +75,7 @@ function Navbar() {
             flexGrow: 1,
             display: "flex",
             justifyContent: "flex-start",
-            ml: {xs:2,sm:5,md:15,lg:20},
+            ml: {xs:4,sm:5,md:15,lg:20},
             gap: 2, 
           }}
         >
