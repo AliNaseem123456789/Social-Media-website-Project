@@ -86,7 +86,7 @@ function Navbar() {
           </Link>
           
          <Link to="/postwrite" style={{textDecoration:"none",color:"white"}}> <Button color="inherit" startIcon={<AddCircleOutlineIcon />}>Add Post</Button></Link>
-          <Button color="inherit" startIcon={<MailIcon/>}>Inbox</Button>
+          
         </Box>
 
         {/* Right-side placeholder (User/Avatar) */}
