@@ -75,12 +75,12 @@ function Navbar() {
             flexGrow: 1,
             display: "flex",
             justifyContent: "flex-start",
-            ml: {xs:4,sm:5,md:15,lg:20},
+            ml: {xs:0,sm:0,md:15,lg:18},
             gap: 2, 
           }}
         >
-          <Link to="/home" style={{textDecoration:"none",color:"white"}}>
-          <Button color="inherit" startIcon={<HomeIcon />}>
+          <Link to="/home" style={{textDecoration:"none",color:"white",ml:"5px"}}>
+          <Button color="inherit" startIcon={<HomeIcon />} >
             Home
           </Button>
           </Link>
