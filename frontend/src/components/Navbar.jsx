@@ -81,7 +81,7 @@ function Navbar() {
         >
           <Link to="/home" style={{textDecoration:"none",color:"white",ml:"5px"}}>
           <Button color="inherit" startIcon={<HomeIcon />} >
-            Homehello
+            Home
           </Button>
           </Link>
           
