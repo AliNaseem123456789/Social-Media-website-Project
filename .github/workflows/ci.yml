@@ -50,6 +50,6 @@ jobs:
       #  working-directory: ./backend
       #  run: npm test
 
-      - name: Run Supabase Migrations
-        working-directory: ./backend
-        run: npx supabase db push
+      #- name: Run Supabase Migrations
+       # working-directory: ./backend
+       # run: npx supabase db push
