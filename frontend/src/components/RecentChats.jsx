@@ -112,19 +112,25 @@ function RecentChats() {
             No friends found
           </Typography>
         ) : (
-          <List>
-            {friends.map((friend) => (
-              <ListItem key={friend.id}>
-                <ListItemText primary={friend.username} primaryTypographyProps={{ color: "#fff" }} />
-                  <ListItem
-                  button
-                  component={Link}
-                  to={`/chat/${currentUserId}/${friend.id}`}
-                  sx={{ "&:hover": { backgroundColor: "rgba(255,255,255,0.1)" } }}
-                ></ListItem>
-              </ListItem>
-            ))}
-          </List>
+         <List>
+  {friends.map((friend) => (
+    <React.Fragment key={friend.id}>
+      <ListItem
+        button
+        component={Link}
+        to={`/chat/${currentUserId}/${friend.id}`}
+        sx={{ "&:hover": { backgroundColor: "rgba(255,255,255,0.1)" } }}
+      >
+        <ListItemText
+          primary={friend.username}
+          primaryTypographyProps={{ color: "#fff" }}
+        />
+      </ListItem>
+      <Divider sx={{ bgcolor: "rgba(255,255,255,0.1)" }} />
+    </React.Fragment>
+  ))}
+</List>
+
         )}
       </Paper>
     </Box>
