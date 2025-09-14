@@ -61,7 +61,6 @@ function Sidebar() {
   { text: "Friend Requests", icon: <FavoriteIcon />, path: `/friendrequests/${userId}` },
   { text: "Friends", icon: <GroupIcon />, path: `/friendspage/${userId}` },
     { text: "Logout", icon: <LogoutIcon />,  action:handleLogout },
-  { text: "More", icon: <MoreHorizIcon />, path: "/more" },
 ];
 
   const drawerContent = (

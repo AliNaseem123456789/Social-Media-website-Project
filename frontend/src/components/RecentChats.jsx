@@ -116,6 +116,12 @@ function RecentChats() {
             {friends.map((friend) => (
               <ListItem key={friend.id}>
                 <ListItemText primary={friend.username} primaryTypographyProps={{ color: "#fff" }} />
+                  <ListItem
+                  button
+                  component={Link}
+                  to={`/chat/${currentUserId}/${friend.id}`}
+                  sx={{ "&:hover": { backgroundColor: "rgba(255,255,255,0.1)" } }}
+                ></ListItem>
               </ListItem>
             ))}
           </List>
