@@ -7,6 +7,7 @@ import authRoutes from "./routes/authRoutes.js";
 import postRoutes from "./routes/postRoutes.js";
 import friendsRoutes from "./routes/friendsRoutes.js";
 import chatsRoutes from "./routes/chatsRoutes.js";
+import client from "./elasticsearch.js";
 const app = express();
 app.use(
   cors({
@@ -80,6 +81,52 @@ io.on("connection", (socket) => {
     }
   });
 });
+
+app.post("/index", async (req, res) => {
+  try {
+    const { id, title, content, author } = req.body;
+
+    await client.index({
+      index: "posts",   // you can choose any index name (like "users", "comments")
+      id,               // optional, if you want to control IDs
+      document: {
+        title,
+        content,
+        author,
+        created_at: new Date(),
+      },
+    });
+
+    res.json({ message: "Document indexed successfully!" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Indexing failed" });
+  }
+});
+
+// ✅ Search documents
+app.get("/search", async (req, res) => {
+  try {
+    const q = req.query.q;
+
+    const result = await client.search({
+      index: "posts",
+      query: {
+        multi_match: {
+          query: q,
+          fields: ["title", "content", "author"],
+        },
+      },
+    });
+
+    res.json(result.hits.hits.map(hit => hit._source));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Search failed" });
+  }
+});
+
+
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
 
