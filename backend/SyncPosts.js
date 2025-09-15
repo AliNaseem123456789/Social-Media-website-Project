@@ -13,8 +13,9 @@ async function syncUsers() {
   for (const user of users) {
     await client.index({
       index: "users",        // index name
-      id: user.id,           // use Supabase user id
+      id: user.id,           // use Supabase user id as ES doc id
       document: {
+        id: user.id,         // ✅ store DB id inside _source
         username: user.username,
         email: user.email,
         created_at: user.created_at,
