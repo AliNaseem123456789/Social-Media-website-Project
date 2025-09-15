@@ -2,7 +2,7 @@
 import { Client } from "@elastic/elasticsearch";
 
 // Use API key OR username/password (choose one)
-const client = new Client({
+const esclient = new Client({
   node: "https://my-elasticsearch-project-aa83ed.es.us-central1.gcp.elastic.cloud:443",
   auth: {
     apiKey: "NDV1RlRKa0JWam40dEtUMkdhQkw6Qk1IcXpnYXVLeVlKUXkyVHN3VVAwUQ==", 
@@ -10,4 +10,4 @@ const client = new Client({
   },
 });
 
-export default client;
+export default esclient;
