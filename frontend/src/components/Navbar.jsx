@@ -103,32 +103,35 @@ function Navbar() {
               onChange={(e) => setQuery(e.target.value)}
             />
           </Search>
-
-          {/* Dropdown Results */}
-          {results.length > 0 && (
-            <Paper
-              sx={{
-                position: "absolute",
-                top: "40px",
-                left: 0,
-                right: 0,
-                zIndex: 1000,
-                maxHeight: "200px",
-                overflowY: "auto",
-              }}
-            >
-              <List>
-                {results.map((user) => (
-                  <ListItem key={user.email} button>
-                    <ListItemText
-                      primary={user.username}
-                      secondary={user.email}
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            </Paper>
-          )}
+{/* Dropdown Results */}
+{results.length > 0 && (
+  <Paper
+    sx={{
+      position: "absolute",
+      top: "40px",
+      left: 0,
+      right: 0,
+      zIndex: 1000,
+      maxHeight: "200px",
+      overflowY: "auto",
+    }}
+  >
+    <List>
+      {results.map((user) => (
+        <ListItem
+          key={user.id}
+          button
+          onClick={() => navigate(`/profile/${user.id}`)}  // 👈 navigate to profile
+        >
+          <ListItemText
+            primary={user.username}
+            secondary={user.email}
+          />
+        </ListItem>
+      ))}
+    </List>
+  </Paper>
+)}
         </Box>
 
         {/* Buttons shifted left */}
