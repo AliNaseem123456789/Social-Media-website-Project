@@ -15,6 +15,7 @@ import Paper from "@mui/material/Paper";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
+import { useNavigate } from "react-router-dom";
 
 const Search = styled("div")(({ theme }) => ({
   position: "relative",
@@ -59,6 +60,7 @@ function Navbar() {
   const username = localStorage.getItem("username") || "User";
   const id = localStorage.getItem("user_id") || null;
   console.log("Logged in user:", username, id);
+  const navigate = useNavigate();
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
