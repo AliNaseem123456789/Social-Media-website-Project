@@ -125,6 +125,28 @@ app.get("/search", async (req, res) => {
     res.status(500).json({ error: "Search failed" });
   }
 });
+app.post("/create-post", async (req, res) => {
+  const { title, content, author } = req.body;
+
+  // Insert into Supabase
+  const { data, error } = await supabase
+    .from("posts")
+    .insert([{ title, content, author }])
+    .select()
+    .single();
+
+  if (error) return res.status(500).json({ error });
+
+  // Index into Elasticsearch
+  await client.index({
+    index: "posts",
+    id: data.id,
+    document: data,
+  });
+
+  res.json({ message: "Post created and indexed", post: data });
+});
+
 
 
 const PORT = process.env.PORT || 5000;
