@@ -34,49 +34,29 @@ router.post("/login", async (req, res) => {
   }
 });
 
-router.post("/signup", async (req, res) => { 
-  const { username, email, password } = req.body;
+router.post("/signup", async (req, res) => {
+  const { username, email, password, } = req.body;
 
-  // Password validation
-  if (!password.match(/^[A-Za-z]\w{7,14}$/)) {
-    return res.status(401).json({ 
-      success: false, 
-      message: "Password must begin with a letter and contain 7 to 14 letters" 
-    });
+  if (password.match(/^[A-Za-z]\w{7,14}$/)) {
+    res.json({ success: true, message: "Login successful " });
+  } else {
+    res.status(401).json({ success: false, message: "Password Must Begin with a letter and contain 7 to 14 letters " });
   }
-
-  try {
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Insert into Supabase
-    const { data: user, error } = await supabase
+  try{
+    
+    const hashedPassword =await bcrypt.hash(password, 10)
+    const { data, error } = await supabase
       .from("users")
       .insert([{ username, email, password: hashedPassword }])
-      .select("id, username, email, created_at")
+      .select("id, username, email")
       .single();
 
     if (error) throw error;
-
-    // Index into Elasticsearch
-    await client.index({
-      index: "users",
-      id: user.id,            // use DB id as ES doc id
-      document: {
-        id: user.id,          // store DB id inside _source
-        username: user.username,
-        email: user.email,
-        created_at: user.created_at,
-      },
-    });
-
-    res.json({ success: true, message: "User registered and indexed successfully", user });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "Database or indexing error" });
+    res.json({ success: true, message: "User registered successfully " });
   }
+  catch(err){ res.status(500).json({ success: false, message: "Database error " });}
 });
+
 // Google client setup
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
