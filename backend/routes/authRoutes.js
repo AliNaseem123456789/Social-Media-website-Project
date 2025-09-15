@@ -3,7 +3,7 @@ const router = express.Router();
 import bcrypt from "bcrypt";
 import supabase from "../supabaseClient.js";
 import { OAuth2Client } from "google-auth-library";
-import client from "../elasticsearch.js"
+import esclient from "../elasticsearch.js"
 
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
@@ -59,7 +59,7 @@ router.post("/signup", async (req, res) => {
     if (error) throw error;
 
     // Index into Elasticsearch
-    await client.index({
+    await esclient.index({
       index: "users",
       id: user.id,            // use DB id as ES doc id
       document: {
