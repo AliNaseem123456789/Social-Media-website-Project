@@ -92,12 +92,17 @@ app.get("/search-users", async (req, res) => {
       query: {
         multi_match: {
           query: q,
-          fields: ["username", "email"], // searchable fields
+          fields: ["username", "email"],
         },
       },
     });
 
-    res.json(result.hits.hits.map(hit => hit._source));
+    res.json(
+      result.hits.hits.map((hit) => ({
+        id: hit._source.id,     // ✅ users table id
+        ...hit._source,
+      }))
+    );
   } catch (err) {
     console.error("❌ Search error:", err);
     res.status(500).json({ error: "User search failed" });
