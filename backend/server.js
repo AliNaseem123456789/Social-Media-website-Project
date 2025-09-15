@@ -82,56 +82,36 @@ io.on("connection", (socket) => {
   });
 });
 
-app.post("/index", async (req, res) => {
-  try {
-    const { id, title, content, author } = req.body;
-
-    await client.index({
-      index: "posts",   // you can choose any index name (like "users", "comments")
-      id,               // optional, if you want to control IDs
-      document: {
-        title,
-        content,
-        author,
-        created_at: new Date(),
-      },
-    });
-
-    res.json({ message: "Document indexed successfully!" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Indexing failed" });
-  }
-});
-
-// ✅ Search documents
-app.get("/search", async (req, res) => {
+// -------------------- SEARCH USERS --------------------
+app.get("/search-users", async (req, res) => {
   try {
     const q = req.query.q;
 
     const result = await client.search({
-      index: "posts",
+      index: "users",
       query: {
         multi_match: {
           query: q,
-          fields: ["title", "content", "author"],
+          fields: ["username", "email"], // searchable fields
         },
       },
     });
 
     res.json(result.hits.hits.map(hit => hit._source));
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Search failed" });
+    console.error("❌ Search error:", err);
+    res.status(500).json({ error: "User search failed" });
   }
 });
-app.post("/create-post", async (req, res) => {
-  const { title, content, author } = req.body;
+
+// -------------------- CREATE USER --------------------
+app.post("/create-user", async (req, res) => {
+  const { username, email, password } = req.body;
 
   // Insert into Supabase
   const { data, error } = await supabase
-    .from("posts")
-    .insert([{ title, content, author }])
+    .from("users")
+    .insert([{ username, email, password }])
     .select()
     .single();
 
@@ -139,14 +119,17 @@ app.post("/create-post", async (req, res) => {
 
   // Index into Elasticsearch
   await client.index({
-    index: "posts",
+    index: "users",
     id: data.id,
-    document: data,
+    document: {
+      username: data.username,
+      email: data.email,
+      created_at: data.created_at,
+    },
   });
 
-  res.json({ message: "Post created and indexed", post: data });
+  res.json({ message: "✅ User created and indexed", user: data });
 });
-
 
 
 const PORT = process.env.PORT || 5000;

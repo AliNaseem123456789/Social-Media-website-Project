@@ -1,29 +1,28 @@
-// syncPosts.js
-import supabase from "./supabaseClient.js"
-import client from "./elasticsearch.js";
+// SyncUsers.js
+import supabase from "./supabaseClient.js";   // ✅ use your existing client
+import client from "./elasticsearch.js";     // ✅ elasticsearch client
 
-async function syncPosts() {
-  const { data: posts, error } = await supabase.from("posts").select("*");
+async function syncUsers() {
+  const { data: users, error } = await supabase.from("users").select("*");
 
   if (error) {
-    console.error("❌ Supabase fetch error:", error);
+    console.error("❌ Supabase error:", error);
     return;
   }
 
-  for (const post of posts) {
+  for (const user of users) {
     await client.index({
-      index: "posts",
-      id: post.id,
+      index: "users",        // index name
+      id: user.id,           // use Supabase user id
       document: {
-        title: post.title,
-        content: post.content,
-        author: post.author,
-        created_at: post.created_at,
+        username: user.username,
+        email: user.email,
+        created_at: user.created_at,
       },
     });
   }
 
-  console.log("✅ Synced all posts into Elasticsearch!");
+  console.log("✅ Users synced into Elasticsearch");
 }
 
-syncPosts();
+syncUsers();
