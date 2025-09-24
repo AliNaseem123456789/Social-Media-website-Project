@@ -10,7 +10,7 @@ function Home() {
     <Box sx={{ bgcolor: "#f0f2f5", color: '#000', minHeight: '100vh' }}>
       <Navbar />
       <Box sx={{ display: 'flex', pt: 2, px: 2, alignItems: 'flex-start' }}> 
-        {/* Left Column: Sidebar + Recent Chats */}
+      
         <Box sx={{ display: 'flex', flexDirection: 'column', width: 280, mr: 2 }}>
           <Sidebar />
 

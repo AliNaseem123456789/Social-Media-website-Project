@@ -1,4 +1,3 @@
-// SignupPopup.jsx
 import React, { useState } from "react";
 import axios from "axios";
 import GoogleButton from "./GoogleButton";
@@ -31,13 +30,11 @@ function SignupPopup({ open, handleClose, openLogin }) {
     }
 
     try {
-      const res = await axios.post("https://social-media-website-project.onrender.com/api/signup", {
-        username,
-        email,
-        password,
-      });
+      const res = await axios.post(
+        "https://social-media-website-project.onrender.com/api/signup",
+        { username, email, password }
+      );
       setMessage(res.data.message);
-
       if (res.data.success) {
         handleClose();
       }
@@ -48,7 +45,7 @@ function SignupPopup({ open, handleClose, openLogin }) {
 
   const handleOpenLogin = () => {
     handleClose();
-    openLogin(); // toggle to login
+    openLogin();
   };
 
   return (
@@ -56,107 +53,106 @@ function SignupPopup({ open, handleClose, openLogin }) {
       open={open}
       onClose={handleClose}
       fullWidth
-      maxWidth="sm"
+      maxWidth="xs"
       sx={{
         "& .MuiPaper-root": {
-          borderRadius: "16px",
-          bgcolor: "white",
-          minHeight: "95vh",
-          maxWidth: "480px",
-          p: 3,
+          borderRadius: "20px",
+          p: 4,
           display: "flex",
           flexDirection: "column",
-          justifyContent: "center",
+          alignItems: "center",
+          background: "linear-gradient(135deg, #f9f9f9, #e0e0e0)",
+          boxShadow: "0px 10px 30px rgba(0,0,0,0.1)",
         },
       }}
     >
-      <DialogTitle sx={{ textAlign: "center", fontWeight: "bold", mb: 2 }}>
-        Signup
+      <DialogTitle
+        sx={{ textAlign: "center", fontWeight: "700", fontSize: "1.6rem", mb: 3 }}
+      >
+        Create Account
       </DialogTitle>
 
       <DialogContent
         sx={{
           display: "flex",
           flexDirection: "column",
-          gap: 2,
-          px: { xs: 2, sm: 4 },
+          gap: 2.5,
           alignItems: "center",
+          width: "100%",
         }}
       >
+        {/* Google Signup */}
         <GoogleButton />
 
-        {/* OR divider */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            width: "100%",
-            margin: "20px 0",
-            color: "#888",
-            fontWeight: 500,
-            fontSize: "14px",
-          }}
-        >
+        {/* OR Divider */}
+        <Box sx={{ display: "flex", alignItems: "center", width: "100%", my: 2 }}>
           <Box sx={{ flex: 1, height: "1px", bgcolor: "#ccc", mr: 1 }} />
-          OR
+          <Typography variant="body2" sx={{ color: "#888", fontWeight: 500 }}>
+            OR
+          </Typography>
           <Box sx={{ flex: 1, height: "1px", bgcolor: "#ccc", ml: 1 }} />
         </Box>
 
+        {/* Input Fields */}
         <TextField
           label="Username"
-          variant="outlined"
           value={username}
-          onChange={(e) => {
-            setUsername(e.target.value);
-            setMessage("");
-          }}
+          onChange={(e) => { setUsername(e.target.value); setMessage(""); }}
           required
+          fullWidth
+          autoComplete="username"
           sx={{
-            width: "100%",
             maxWidth: "360px",
-            "& .MuiOutlinedInput-root": { borderRadius: "20px", bgcolor: "#e5e5e5" },
+            "& .MuiOutlinedInput-root": {
+              borderRadius: "25px",
+              bgcolor: "#f5f5f5",
+              px: 1.5,
+              py: 0.5,
+            },
           }}
         />
-
         <TextField
           label="Email"
           type="email"
-          variant="outlined"
           value={email}
-          onChange={(e) => {
-            setEmail(e.target.value);
-            setMessage("");
-          }}
+          onChange={(e) => { setEmail(e.target.value); setMessage(""); }}
           required
+          fullWidth
+          autoComplete="email"
           sx={{
-            width: "100%",
             maxWidth: "360px",
-            "& .MuiOutlinedInput-root": { borderRadius: "20px", bgcolor: "#e5e5e5" },
+            "& .MuiOutlinedInput-root": {
+              borderRadius: "25px",
+              bgcolor: "#f5f5f5",
+              px: 1.5,
+              py: 0.5,
+            },
           }}
         />
-
         <TextField
           label="Password"
           type="password"
-          variant="outlined"
           value={password}
-          onChange={(e) => {
-            setPassword(e.target.value);
-            setMessage("");
-          }}
+          onChange={(e) => { setPassword(e.target.value); setMessage(""); }}
           required
+          fullWidth
+          autoComplete="new-password"
           sx={{
-            width: "100%",
             maxWidth: "360px",
-            "& .MuiOutlinedInput-root": { borderRadius: "20px", bgcolor: "#e5e5e5" },
+            "& .MuiOutlinedInput-root": {
+              borderRadius: "25px",
+              bgcolor: "#f5f5f5",
+              px: 1.5,
+              py: 0.5,
+            },
           }}
         />
 
+        {/* Message */}
         {message && (
           <Typography
-            variant="body2"
             color={message.includes("success") ? "green" : "red"}
-            sx={{ mt: 1, textAlign: "center" }}
+            sx={{ mt: 1, textAlign: "center", fontWeight: 500 }}
           >
             {message}
           </Typography>
@@ -164,18 +160,48 @@ function SignupPopup({ open, handleClose, openLogin }) {
 
         {/* Toggle to Login */}
         <Typography
-          sx={{ cursor: "pointer", color: "blue" }}
+          sx={{
+            cursor: "pointer",
+            color: "#1976d2",
+            textAlign: "center",
+            fontWeight: 500,
+            mt: 1,
+          }}
           onClick={handleOpenLogin}
         >
           Already have an account? Log in
         </Typography>
       </DialogContent>
 
-      <DialogActions sx={{ justifyContent: "center", mt: 2, gap: 2 }}>
-        <Button onClick={handleClose} color="secondary">
+      {/* Actions */}
+      <DialogActions
+        sx={{
+          justifyContent: "space-between",
+          mt: 3,
+          width: "100%",
+          px: 3,
+        }}
+      >
+        <Button
+          onClick={handleClose}
+          color="secondary"
+          sx={{ borderRadius: "20px", px: 3 }}
+        >
           Cancel
         </Button>
-        <Button type="submit" variant="contained" color="primary" onClick={handleSubmit}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleSubmit}
+          sx={{
+            borderRadius: "20px",
+            px: 4,
+            py: 1.2,
+            textTransform: "none",
+            fontWeight: 600,
+            background: "linear-gradient(135deg, #42a5f5, #1e88e5)",
+          }}
+        >
           Signup
         </Button>
       </DialogActions>

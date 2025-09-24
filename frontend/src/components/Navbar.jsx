@@ -123,7 +123,7 @@ function Navbar() {
         <ListItem
           key={user.id}
           button
-          onClick={() => navigate(`/profile/${user.id}`)}  // 👈 navigate to profile
+          onClick={() => navigate(`/profile/${user.id}`)}
         >
           <ListItemText
             primary={user.username}
