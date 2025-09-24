@@ -1,7 +1,32 @@
 import express from "express";
 import supabase from "../supabaseClient.js";
-
+import multer from "multer";
 const router = express.Router();
+
+const upload = multer({ storage: multer.memoryStorage() });
+
+router.post("/upload", upload.single("image"), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: "No file uploaded" });
+
+    const fileName = `${Date.now()}_${req.file.originalname}`;
+
+    const { data, error } = await supabase.storage
+      .from("post-images")
+      .upload(fileName, req.file.buffer, { contentType: req.file.mimetype });
+
+    if (error) throw error;
+
+    const { publicURL } = supabase.storage.from("post-images").getPublicUrl(fileName);
+
+    res.json({ success: true, url: publicURL });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Image upload failed" });
+  }
+});
+
+
 
 // POST /api/posts
 router.post("/", async (req, res) => {
