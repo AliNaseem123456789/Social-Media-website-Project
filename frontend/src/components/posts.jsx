@@ -201,7 +201,20 @@ function Feed() {
                 >
                   {post.content}
                 </Typography>
-
+                {/* Post Image (if exists) */}
+{post.image_url && (
+  <img
+    src={post.image_url}
+    alt="Post"
+    style={{
+      width: "100%",
+      borderRadius: "12px",
+      maxHeight: "400px",
+      objectFit: "cover",
+      marginBottom: "12px",
+    }}
+  />
+)}
                 {/* Action Row */}
                 <Stack direction="row" spacing={1.5} alignItems="center">
                   <IconButton
