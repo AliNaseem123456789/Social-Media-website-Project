@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "framer-motion": "^12.23.21",
+    "multer": "^2.0.2",
     "react-simple-typewriter": "^5.0.1"
   }
 }
