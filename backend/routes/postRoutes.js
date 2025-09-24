@@ -30,7 +30,7 @@ router.post("/upload", upload.single("image"), async (req, res) => {
 
 // POST /api/posts
 router.post("/", async (req, res) => {
-  const { user_id, content } = req.body;
+  const { user_id, content,image_url } = req.body;
 
   if (!content) {
     return res.status(400).json({ success: false, message: "Post cannot be empty" });
@@ -39,7 +39,7 @@ router.post("/", async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("posts")
-      .insert([{ user_id, content }])
+      .insert([{ user_id, content,image_url }])
       .select("post_id, content, created_at")
       .single();
 
