@@ -50,7 +50,6 @@ function LoginSignuppage() {
       <Features />
       <HowItWorks />
       <Testimonials />
-      <Footer/>
     </>
   );
 }
