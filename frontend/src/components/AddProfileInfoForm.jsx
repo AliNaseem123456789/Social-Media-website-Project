@@ -8,14 +8,15 @@ const style = {
   left: "50%",
   transform: "translate(-50%, -50%)",
   width: { xs: "90%", sm: 500 },
-  maxHeight: "80vh",
-  overflowY: "auto",
+  maxHeight: "80vh",      
+  overflowY: "auto",      
   bgcolor: "#fefefe",
   borderRadius: 3,
   boxShadow: 24,
   p: 4,
   border: "1px solid #ccc",
 };
+
 
 function AddProfileInfoForm({ open, handleClose, userId, onSaved }) {
   const [username, setUsername] = useState("");
@@ -25,8 +26,8 @@ function AddProfileInfoForm({ open, handleClose, userId, onSaved }) {
   const [hobbies, setHobbies] = useState("");
   const [education, setEducation] = useState("");
   const [country, setCountry] = useState("");
-  const [profileImage, setProfileImage] = useState(null); // File object
-  const [coverImage, setCoverImage] = useState(null); // File object
+  const [profileImage, setProfileImage] = useState("");
+  const [coverImage, setCoverImage] = useState("");
   const [loading, setLoading] = useState(false);
 
   // Load existing profile data when modal opens
@@ -44,9 +45,8 @@ function AddProfileInfoForm({ open, handleClose, userId, onSaved }) {
             setHobbies(profile.hobbies || "");
             setEducation(profile.education || "");
             setCountry(profile.country || "");
-            // We don’t set File objects for images, only URLs
-            setProfileImage(null);
-            setCoverImage(null);
+            setProfileImage(profile.profile_image || "");
+            setCoverImage(profile.cover_image || "");
           }
         })
         .catch((err) => console.error("Failed to load profile:", err));
@@ -58,38 +58,23 @@ function AddProfileInfoForm({ open, handleClose, userId, onSaved }) {
     setLoading(true);
 
     try {
-      // 1️⃣ Upload images first if selected
-      const formData = new FormData();
-      formData.append("user_id", userId);
+      const res = await axios.post("https://social-media-website-project.onrender.com/api/posts/profile/add", {
+        user_id: userId,
+        username,
+        bio,
+        gender,
+        age,
+        hobbies,
+        education,
+        country,
+        profile_image: profileImage,
+        cover_image: coverImage,
+      });
 
-      if (profileImage) formData.append("profileImage", profileImage);
-      if (coverImage) formData.append("coverImage", coverImage);
-
-      const uploadRes = await axios.post(
-        "https://social-media-website-project.onrender.com/api/profile/upload",
-        formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
-
-      // 2️⃣ Save profile info with DB
-      await axios.post(
-        "https://social-media-website-project.onrender.com/api/posts/profile/add",
-        {
-          user_id: userId,
-          username,
-          bio,
-          gender,
-          age,
-          hobbies,
-          education,
-          country,
-          profile_image: uploadRes.data.profile || `${userId}.jpg`,
-          cover_image: uploadRes.data.cover || `cover_${userId}.jpg`,
-        }
-      );
-
-      onSaved();
-      handleClose();
+      if (res.data.success) {
+        onSaved();
+        handleClose();
+      }
     } catch (err) {
       console.error("Error saving profile info:", err);
       alert("Failed to save profile info");
@@ -104,7 +89,6 @@ function AddProfileInfoForm({ open, handleClose, userId, onSaved }) {
         <Typography variant="h6" mb={2} fontWeight="bold" color="#000">
           {bio || hobbies || education || country ? "Edit Profile Info" : "Add Profile Info"}
         </Typography>
-
         <Stack component="form" spacing={2} onSubmit={handleSubmit}>
           <TextField
             label="Username"
@@ -132,7 +116,7 @@ function AddProfileInfoForm({ open, handleClose, userId, onSaved }) {
             InputProps={{ style: { color: "#000", backgroundColor: "#fff" } }}
             InputLabelProps={{ style: { color: "#000" } }}
           />
-          <TextField
+           <TextField
             label="Gender"
             value={gender}
             onChange={(e) => setGender(e.target.value)}
@@ -140,7 +124,7 @@ function AddProfileInfoForm({ open, handleClose, userId, onSaved }) {
             InputProps={{ style: { color: "#000", backgroundColor: "#fff" } }}
             InputLabelProps={{ style: { color: "#000" } }}
           />
-          <TextField
+           <TextField
             label="Age"
             value={age}
             onChange={(e) => setAge(e.target.value)}
@@ -164,26 +148,28 @@ function AddProfileInfoForm({ open, handleClose, userId, onSaved }) {
             InputProps={{ style: { color: "#000", backgroundColor: "#fff" } }}
             InputLabelProps={{ style: { color: "#000" } }}
           />
-
-          {/* File uploads */}
-          <div>
-            <Typography variant="body2" color="#000">Profile Image</Typography>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setProfileImage(e.target.files[0])}
-            />
-          </div>
-          <div>
-            <Typography variant="body2" color="#000">Cover Image</Typography>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setCoverImage(e.target.files[0])}
-            />
-          </div>
-
-          <Button type="submit" variant="contained" disabled={loading} sx={{ mt: 1 }}>
+          <TextField
+            label="Profile Image URL"
+            value={profileImage}
+            onChange={(e) => setProfileImage(e.target.value)}
+            fullWidth
+            InputProps={{ style: { color: "#000", backgroundColor: "#fff" } }}
+            InputLabelProps={{ style: { color: "#000" } }}
+          />
+          <TextField
+            label="Cover Image URL"
+            value={coverImage}
+            onChange={(e) => setCoverImage(e.target.value)}
+            fullWidth
+            InputProps={{ style: { color: "#000", backgroundColor: "#fff" } }}
+            InputLabelProps={{ style: { color: "#000" } }}
+          />
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={loading}
+            sx={{ mt: 1 }}
+          >
             {loading ? "Saving..." : "Save"}
           </Button>
         </Stack>
