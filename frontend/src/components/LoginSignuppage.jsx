@@ -1,6 +1,13 @@
+import "./LandingPage/landing.css";
 import React, { useState } from "react";
 import LoginPopup from "./Login";
 import SignupPopup from "./Signup";
+import { Features } from "./LandingPage/Features";
+import { HowItWorks } from "./LandingPage/HowItWorks";
+import { Hero } from "./LandingPage/Hero";
+import { Testimonials } from "./LandingPage/Testimonials";
+import { Footer } from "./LandingPage/Footer";
+// import Navbar from "./Navbar";
 
 function LoginSignuppage() {
   const [openLogin, setOpenLogin] = useState(false);
@@ -18,9 +25,12 @@ function LoginSignuppage() {
 
   return (
     <>
-      {/* Example buttons (optional – you can remove these if handled elsewhere) */}
-      <button onClick={handleOpenLogin}>Login</button>
-      <button onClick={handleOpenSignup}>Signup</button>
+    {/* <Navbar/> */}
+      {/* Hero section with buttons triggering login/signup popups */}
+      <Hero
+        onLogin={handleOpenLogin}
+        onSignup={handleOpenSignup}
+      />
 
       {/* LOGIN POPUP */}
       <LoginPopup
@@ -35,6 +45,12 @@ function LoginSignuppage() {
         handleClose={() => setOpenSignup(false)}
         openLogin={handleOpenLogin}
       />
+
+      {/* Rest of landing page sections */}
+      <Features />
+      <HowItWorks />
+      <Testimonials />
+      <Footer/>
     </>
   );
 }
