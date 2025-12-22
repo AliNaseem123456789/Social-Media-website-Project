@@ -79,7 +79,6 @@ router.get("/", async (req, res) => {
     res.status(500).json({ success: false, message: "Database error" });
   }
 });
-
 router.post("/like", async (req, res) => {
   const { user_id, post_id } = req.body;
 
@@ -88,7 +87,7 @@ router.post("/like", async (req, res) => {
   }
 
   try {
-    // Check if user already liked the post
+    // Check if the user already liked the post
     const { data: existingLike, error: checkError } = await supabase
       .from("likes")
       .select("*")
@@ -99,43 +98,65 @@ router.post("/like", async (req, res) => {
     if (checkError) throw checkError;
 
     if (existingLike) {
-      return res.status(400).json({ success: false, message: "User already liked this post" });
+      // 🔄 User already liked -> unlike (remove)
+      await supabase.from("likes").delete().eq("id", existingLike.id);
+
+      // Decrement total_likes
+      const { data: post, error: fetchError } = await supabase
+        .from("posts")
+        .select("total_likes")
+        .eq("post_id", post_id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const { data: updatedPost, error: updateError } = await supabase
+        .from("posts")
+        .update({ total_likes: Math.max((post.total_likes || 1) - 1, 0) })
+        .eq("post_id", post_id)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+
+      return res.json({
+        success: true,
+        message: "Post unliked",
+        total_likes: updatedPost.total_likes,
+        liked: false,
+      });
+    } else {
+      // ❤️ User hasn't liked -> like
+      const { error: insertError } = await supabase
+        .from("likes")
+        .insert([{ user_id, post_id }]);
+
+      if (insertError) throw insertError;
+
+      const { data: post, error: fetchError } = await supabase
+        .from("posts")
+        .select("total_likes")
+        .eq("post_id", post_id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const { data: updatedPost, error: updateError } = await supabase
+        .from("posts")
+        .update({ total_likes: (post.total_likes || 0) + 1 })
+        .eq("post_id", post_id)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+
+      return res.json({
+        success: true,
+        message: "Post liked",
+        total_likes: updatedPost.total_likes,
+        liked: true,
+      });
     }
-
-    // Insert new like
-    const { data: newLike, error: insertError } = await supabase
-      .from("likes")
-      .insert([{ user_id, post_id }])
-      .select()
-      .single();
-
-    if (insertError) throw insertError;
-
-    // Fetch current total_likes
-    const { data: post, error: fetchPostError } = await supabase
-      .from("posts")
-      .select("total_likes")
-      .eq("post_id", post_id)
-      .single();
-
-    if (fetchPostError) throw fetchPostError;
-
-    // Increment total_likes
-    const { data: updatedPost, error: updateError } = await supabase
-      .from("posts")
-      .update({ total_likes: (post.total_likes || 0) + 1 })
-      .eq("post_id", post_id)
-      .select()
-      .single();
-
-    if (updateError) throw updateError;
-
-    res.json({
-      success: true,
-      message: "Post liked",
-      like: newLike,
-      total_likes: updatedPost.total_likes,
-    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Database error" });
