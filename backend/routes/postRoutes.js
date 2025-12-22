@@ -3,29 +3,52 @@ import supabase from "../supabaseClient.js";
 import multer from "multer";
 const router = express.Router();
 
-const upload = multer({ storage: multer.memoryStorage() });
+// / Ensure uploads folder exists
+const UPLOAD_DIR = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR);
 
-router.post("/upload", upload.single("image"), async (req, res) => {
+// Multer setup
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+  filename: (req, file, cb) => {
+    const userId = req.body.user_id;
+    const type = file.fieldname; // profileImage or coverImage
+    const ext = path.extname(file.originalname) || ".jpg";
+    const filename = type === "profileImage" ? `${userId}${ext}` : `cover_${userId}${ext}`;
+    cb(null, filename);
+  },
+});
+
+const upload = multer({ storage });
+// Upload profile/cover images
+router.post("/profile/upload", upload.fields([
+  { name: "profileImage", maxCount: 1 },
+  { name: "coverImage", maxCount: 1 }
+]), async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ success: false, message: "No file uploaded" });
+    const { user_id } = req.body;
+    const profileFilename = req.files["profileImage"]?.[0].filename || null;
+    const coverFilename = req.files["coverImage"]?.[0].filename || null;
 
-    const fileName = `${Date.now()}_${req.file.originalname}`;
-
-    const { data, error } = await supabase.storage
-      .from("post-images")
-      .upload(fileName, req.file.buffer, { contentType: req.file.mimetype });
+    // Update DB with filenames
+    const { data, error } = await supabase
+      .from("user_profiles")
+      .upsert({
+        user_id: Number(user_id),
+        profile_image: profileFilename,
+        cover_image: coverFilename,
+      }, { onConflict: "user_id" })
+      .select()
+      .single();
 
     if (error) throw error;
 
-    const { publicURL } = supabase.storage.from("post-images").getPublicUrl(fileName);
-
-    res.json({ success: true, url: publicURL });
+    res.json({ success: true, profile: profileFilename, cover: coverFilename });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, message: "Image upload failed" });
+    res.status(500).json({ success: false, message: "Upload failed" });
   }
 });
-
 
 
 // POST /api/posts
