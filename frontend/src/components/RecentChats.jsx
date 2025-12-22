@@ -16,7 +16,6 @@ import {
 } from "@mui/material";
 import { styled, useTheme } from "@mui/material/styles";
 import ChatIcon from "@mui/icons-material/Chat";
-
 const StickyWrapper = styled(Box)(({ theme }) => ({
   position: "sticky",
   top: 80, 
@@ -30,7 +29,6 @@ const StickyWrapper = styled(Box)(({ theme }) => ({
   overflowY: "auto",
   boxShadow: "2px 0 10px rgba(0,0,0,0.3)",
 }));
-
 function RecentChats() {
   const [friends, setFriends] = useState([]);
   const [recentChats, setRecentChats] = useState([]);
@@ -49,7 +47,6 @@ function RecentChats() {
       console.error("Error fetching friends:", error);
     }
   };
-
   const fetchRecentChats = async () => {
     try {
       const response = await axios.get(
@@ -60,14 +57,12 @@ function RecentChats() {
       console.error("Error fetching recent chats:", error);
     }
   };
-
   useEffect(() => {
     if (currentUserId) {
       fetchFriends();
       fetchRecentChats();
     }
   }, [currentUserId]);
-
   const content = (
     <Box>
       {/* Recent Chats Section */}
@@ -102,7 +97,6 @@ function RecentChats() {
           </List>
         )}
       </Paper>
-
       {/* Friends Section */}
       <Typography variant="h6" gutterBottom>
         Friends
@@ -133,14 +127,10 @@ function RecentChats() {
     </React.Fragment>
   ))}
 </List>
-
-
         )}
       </Paper>
     </Box>
   );
-
-  // Desktop: show sticky panel, Mobile: show drawer button
   return (
     <>
       {isMobile ? (
@@ -174,5 +164,4 @@ function RecentChats() {
     </>
   );
 }
-
 export default RecentChats;

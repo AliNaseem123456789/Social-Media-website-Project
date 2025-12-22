@@ -3,29 +3,52 @@ import supabase from "../supabaseClient.js";
 import multer from "multer";
 const router = express.Router();
 
-const upload = multer({ storage: multer.memoryStorage() });
+// / Ensure uploads folder exists
+const UPLOAD_DIR = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR);
 
-router.post("/upload", upload.single("image"), async (req, res) => {
+// Multer setup
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+  filename: (req, file, cb) => {
+    const userId = req.body.user_id;
+    const type = file.fieldname; // profileImage or coverImage
+    const ext = path.extname(file.originalname) || ".jpg";
+    const filename = type === "profileImage" ? `${userId}${ext}` : `cover_${userId}${ext}`;
+    cb(null, filename);
+  },
+});
+
+const upload = multer({ storage });
+// Upload profile/cover images
+router.post("/profile/upload", upload.fields([
+  { name: "profileImage", maxCount: 1 },
+  { name: "coverImage", maxCount: 1 }
+]), async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ success: false, message: "No file uploaded" });
+    const { user_id } = req.body;
+    const profileFilename = req.files["profileImage"]?.[0].filename || null;
+    const coverFilename = req.files["coverImage"]?.[0].filename || null;
 
-    const fileName = `${Date.now()}_${req.file.originalname}`;
-
-    const { data, error } = await supabase.storage
-      .from("post-images")
-      .upload(fileName, req.file.buffer, { contentType: req.file.mimetype });
+    // Update DB with filenames
+    const { data, error } = await supabase
+      .from("user_profiles")
+      .upsert({
+        user_id: Number(user_id),
+        profile_image: profileFilename,
+        cover_image: coverFilename,
+      }, { onConflict: "user_id" })
+      .select()
+      .single();
 
     if (error) throw error;
 
-    const { publicURL } = supabase.storage.from("post-images").getPublicUrl(fileName);
-
-    res.json({ success: true, url: publicURL });
+    res.json({ success: true, profile: profileFilename, cover: coverFilename });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, message: "Image upload failed" });
+    res.status(500).json({ success: false, message: "Upload failed" });
   }
 });
-
 
 
 // POST /api/posts
@@ -79,7 +102,6 @@ router.get("/", async (req, res) => {
     res.status(500).json({ success: false, message: "Database error" });
   }
 });
-
 router.post("/like", async (req, res) => {
   const { user_id, post_id } = req.body;
 
@@ -88,7 +110,7 @@ router.post("/like", async (req, res) => {
   }
 
   try {
-    // Check if user already liked the post
+    // Check if the user already liked the post
     const { data: existingLike, error: checkError } = await supabase
       .from("likes")
       .select("*")
@@ -99,43 +121,65 @@ router.post("/like", async (req, res) => {
     if (checkError) throw checkError;
 
     if (existingLike) {
-      return res.status(400).json({ success: false, message: "User already liked this post" });
+      // 🔄 User already liked -> unlike (remove)
+      await supabase.from("likes").delete().eq("id", existingLike.id);
+
+      // Decrement total_likes
+      const { data: post, error: fetchError } = await supabase
+        .from("posts")
+        .select("total_likes")
+        .eq("post_id", post_id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const { data: updatedPost, error: updateError } = await supabase
+        .from("posts")
+        .update({ total_likes: Math.max((post.total_likes || 1) - 1, 0) })
+        .eq("post_id", post_id)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+
+      return res.json({
+        success: true,
+        message: "Post unliked",
+        total_likes: updatedPost.total_likes,
+        liked: false,
+      });
+    } else {
+      // ❤️ User hasn't liked -> like
+      const { error: insertError } = await supabase
+        .from("likes")
+        .insert([{ user_id, post_id }]);
+
+      if (insertError) throw insertError;
+
+      const { data: post, error: fetchError } = await supabase
+        .from("posts")
+        .select("total_likes")
+        .eq("post_id", post_id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const { data: updatedPost, error: updateError } = await supabase
+        .from("posts")
+        .update({ total_likes: (post.total_likes || 0) + 1 })
+        .eq("post_id", post_id)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+
+      return res.json({
+        success: true,
+        message: "Post liked",
+        total_likes: updatedPost.total_likes,
+        liked: true,
+      });
     }
-
-    // Insert new like
-    const { data: newLike, error: insertError } = await supabase
-      .from("likes")
-      .insert([{ user_id, post_id }])
-      .select()
-      .single();
-
-    if (insertError) throw insertError;
-
-    // Fetch current total_likes
-    const { data: post, error: fetchPostError } = await supabase
-      .from("posts")
-      .select("total_likes")
-      .eq("post_id", post_id)
-      .single();
-
-    if (fetchPostError) throw fetchPostError;
-
-    // Increment total_likes
-    const { data: updatedPost, error: updateError } = await supabase
-      .from("posts")
-      .update({ total_likes: (post.total_likes || 0) + 1 })
-      .eq("post_id", post_id)
-      .select()
-      .single();
-
-    if (updateError) throw updateError;
-
-    res.json({
-      success: true,
-      message: "Post liked",
-      like: newLike,
-      total_likes: updatedPost.total_likes,
-    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Database error" });

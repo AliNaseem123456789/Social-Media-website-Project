@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import theme from './theme'; // your MUI theme with dark background
-
+import { Footer } from './components/LandingPage/Footer';
 import LoginSignuppage from './components/LoginSignuppage';
 import Login from './components/Login'; 
 import Signup from './components/Signup';
@@ -33,10 +33,8 @@ export default function App() {
           <Route path="/friendspage/:id" element={<FriendsPage />} />
           <Route path="/chat/:user1/:user2" element={<ChatPage />} />
           <Route path="/recentchat/:id" element={<RecentChats />} />
-
-
-
         </Routes>
+        <Footer/>
       </Router>
    
   );

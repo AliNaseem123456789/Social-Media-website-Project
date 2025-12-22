@@ -20,20 +20,36 @@ router.post("/login", async (req, res) => {
     if (!users || users.length === 0) {
       return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
+
     const user = users[0];
+
+    // ✅ FIX: Google account protection
+    if (!user.password) {
+      return res.status(401).json({
+        success: false,
+        message: "This account uses Google login"
+      });
+    }
+
     const match = await bcrypt.compare(password, user.password);
 
-    if (match) {
-     
-      res.json({ success: true, message: "Login successful ", user_id: user.id, username: user.username });
-    } else {
-      res.status(401).json({ success: false, message: "Invalid credentials " });
+    if (!match) {
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
+
+    res.json({
+      success: true,
+      message: "Login successful",
+      user_id: user.id,
+      username: user.username
+    });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "Database error " });
+    console.error("Login error:", err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
 router.post("/signup", async (req, res) => { 
   const { username, email, password } = req.body;
 
@@ -52,31 +68,38 @@ router.post("/signup", async (req, res) => {
     // Insert into Supabase
     const { data: user, error } = await supabase
       .from("users")
-      .insert([{ username, email, password: hashedPassword }])
+      .insert([
+        {
+          username,
+          email,
+          password: hashedPassword
+        }
+      ])
       .select("id, username, email, created_at")
       .single();
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
 
-    // Index into Elasticsearch
-    await esclient.index({
-      index: "users",
-      id: user.id,            // use DB id as ES doc id
-      document: {
-        id: user.id,          // store DB id inside _source
-        username: user.username,
-        email: user.email,
-        created_at: user.created_at,
-      },
+    // ✅ Elasticsearch REMOVED completely
+
+    res.json({
+      success: true,
+      message: "User registered successfully",
+      user
     });
 
-    res.json({ success: true, message: "User registered and indexed successfully", user });
-
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "Database or indexing error" });
+    console.error("Signup error:", err);
+
+    res.status(500).json({
+      success: false,
+      message: "Database error"
+    });
   }
 });
+
 
 // Google client setup
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
