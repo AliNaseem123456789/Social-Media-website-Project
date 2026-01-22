@@ -34,11 +34,10 @@ router.get("/chat/:user1/:user2", async (req, res) => {
 
     if (error) throw error;
 
-    // Map usernames: sender username is already stored in DB
     const formatted = data.map((msg) => ({
       from_user: msg.from_user,
       to_user: msg.to_user,
-      username: msg.username, // sender username
+      username: msg.username,
       message: msg.message,
       created_at: msg.created_at,
     }));
@@ -54,7 +53,7 @@ router.get("/recentchat/:userId", async (req, res) => {
   const { userId } = req.params;
 
   try {
-    // fetch all chats where user is either sender or receiver
+
     const { data, error } = await supabase
       .from("messages")
       .select("from_user, to_user, created_at")
@@ -67,19 +66,17 @@ router.get("/recentchat/:userId", async (req, res) => {
       return res.json([]);
     }
 
-    // get unique partner IDs (other user in the chat)
     const uniquePartners = {};
     data.forEach((msg) => {
       const partnerId =
         msg.from_user === Number(userId) ? msg.to_user : msg.from_user;
       if (!uniquePartners[partnerId]) {
-        uniquePartners[partnerId] = msg.created_at; // store last chat time
+        uniquePartners[partnerId] = msg.created_at;
       }
     });
 
     const partnerIds = Object.keys(uniquePartners);
 
-    // fetch usernames for these IDs
     const { data: users, error: usersError } = await supabase
       .from("users")
       .select("id, username")
@@ -87,14 +84,12 @@ router.get("/recentchat/:userId", async (req, res) => {
 
     if (usersError) throw usersError;
 
-    // merge usernames with recent chat info
     const result = users.map((u) => ({
       id: u.id,
       username: u.username,
       last_chatted: uniquePartners[u.id],
     }));
 
-    // sort by most recent
     result.sort((a, b) => new Date(b.last_chatted) - new Date(a.last_chatted));
 
     res.json(result);
@@ -103,6 +98,5 @@ router.get("/recentchat/:userId", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch recent chats" });
   }
 });
-
 
 export default router;
