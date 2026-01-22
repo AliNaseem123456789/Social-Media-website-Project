@@ -1,68 +1,79 @@
 import express from "express";
 import supabase from "../supabaseClient.js";
 import multer from "multer";
+import path from "path";
+import fs from "fs";
 const router = express.Router();
 
-// / Ensure uploads folder exists
 const UPLOAD_DIR = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR);
 
-// Multer setup
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOAD_DIR),
   filename: (req, file, cb) => {
     const userId = req.body.user_id;
-    const type = file.fieldname; // profileImage or coverImage
+    const type = file.fieldname;
     const ext = path.extname(file.originalname) || ".jpg";
-    const filename = type === "profileImage" ? `${userId}${ext}` : `cover_${userId}${ext}`;
+    const filename =
+      type === "profileImage" ? `${userId}${ext}` : `cover_${userId}${ext}`;
     cb(null, filename);
   },
 });
 
 const upload = multer({ storage });
-// Upload profile/cover images
-router.post("/profile/upload", upload.fields([
-  { name: "profileImage", maxCount: 1 },
-  { name: "coverImage", maxCount: 1 }
-]), async (req, res) => {
-  try {
-    const { user_id } = req.body;
-    const profileFilename = req.files["profileImage"]?.[0].filename || null;
-    const coverFilename = req.files["coverImage"]?.[0].filename || null;
 
-    // Update DB with filenames
-    const { data, error } = await supabase
-      .from("user_profiles")
-      .upsert({
-        user_id: Number(user_id),
-        profile_image: profileFilename,
-        cover_image: coverFilename,
-      }, { onConflict: "user_id" })
-      .select()
-      .single();
+router.post(
+  "/profile/upload",
+  upload.fields([
+    { name: "profileImage", maxCount: 1 },
+    { name: "coverImage", maxCount: 1 },
+  ]),
+  async (req, res) => {
+    try {
+      const { user_id } = req.body;
+      const profileFilename = req.files["profileImage"]?.[0].filename || null;
+      const coverFilename = req.files["coverImage"]?.[0].filename || null;
 
-    if (error) throw error;
+      const { data, error } = await supabase
+        .from("user_profiles")
+        .upsert(
+          {
+            user_id: Number(user_id),
+            profile_image: profileFilename,
+            cover_image: coverFilename,
+          },
+          { onConflict: "user_id" },
+        )
+        .select()
+        .single();
 
-    res.json({ success: true, profile: profileFilename, cover: coverFilename });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "Upload failed" });
-  }
-});
+      if (error) throw error;
 
+      res.json({
+        success: true,
+        profile: profileFilename,
+        cover: coverFilename,
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ success: false, message: "Upload failed" });
+    }
+  },
+);
 
-// POST /api/posts
 router.post("/", async (req, res) => {
-  const { user_id, content,image_url } = req.body;
+  const { user_id, content, image_url } = req.body;
 
   if (!content) {
-    return res.status(400).json({ success: false, message: "Post cannot be empty" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Post cannot be empty" });
   }
 
   try {
     const { data, error } = await supabase
       .from("posts")
-      .insert([{ user_id, content,image_url }])
+      .insert([{ user_id, content, image_url }])
       .select("post_id, content, created_at")
       .single();
 
@@ -74,22 +85,21 @@ router.post("/", async (req, res) => {
     res.status(500).json({ success: false, message: "Database error" });
   }
 });
- 
 
-
-// GET /api/posts
 router.get("/", async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("posts")
-      .select("post_id,user_id, content, created_at, total_likes, users(username)")
+      .select(
+        "post_id,user_id, content, created_at, total_likes, users(username)",
+      )
       .order("created_at", { ascending: false });
 
     if (error) throw error;
 
-    const posts = data.map(post => ({
-      id:post.post_id,
-      user_id:post.user_id,
+    const posts = data.map((post) => ({
+      id: post.post_id,
+      user_id: post.user_id,
       content: post.content,
       created_at: post.created_at,
       total_likes: post.total_likes || 0,
@@ -106,11 +116,12 @@ router.post("/like", async (req, res) => {
   const { user_id, post_id } = req.body;
 
   if (!user_id || !post_id) {
-    return res.status(400).json({ success: false, message: "User ID and Post ID required" });
+    return res
+      .status(400)
+      .json({ success: false, message: "User ID and Post ID required" });
   }
 
   try {
-    // Check if the user already liked the post
     const { data: existingLike, error: checkError } = await supabase
       .from("likes")
       .select("*")
@@ -121,10 +132,8 @@ router.post("/like", async (req, res) => {
     if (checkError) throw checkError;
 
     if (existingLike) {
-      // 🔄 User already liked -> unlike (remove)
       await supabase.from("likes").delete().eq("id", existingLike.id);
 
-      // Decrement total_likes
       const { data: post, error: fetchError } = await supabase
         .from("posts")
         .select("total_likes")
@@ -149,7 +158,6 @@ router.post("/like", async (req, res) => {
         liked: false,
       });
     } else {
-      // ❤️ User hasn't liked -> like
       const { error: insertError } = await supabase
         .from("likes")
         .insert([{ user_id, post_id }]);
@@ -200,10 +208,10 @@ router.get("/fullpost/:id", async (req, res) => {
         total_likes,
         users(username),
         comments(comment_id, comment_text, created_at, users(username))
-        `
+        `,
       )
       .eq("post_id", Number(id))
-      .single(); 
+      .single();
     if (error) throw error;
 
     const post = {
@@ -228,27 +236,24 @@ router.get("/fullpost/:id", async (req, res) => {
   }
 });
 
-
-
-// Insert a comment into a post
 router.post("/comment", async (req, res) => {
   try {
     const { post_id, comment_text, user_id } = req.body;
 
     if (!post_id || !comment_text || !user_id) {
-      return res
-        .status(400)
-        .json({ success: false, message: "post_id, comment_text, and user_id are required" });
+      return res.status(400).json({
+        success: false,
+        message: "post_id, comment_text, and user_id are required",
+      });
     }
 
-    // Insert comment into Supabase
     const { data, error } = await supabase
       .from("comments")
       .insert([
         {
           post_id: post_id,
           comment_text: comment_text,
-          user_id: user_id, // assuming you have a relation between comments → users
+          user_id: user_id,
         },
       ])
       .select("comment_id, comment_text, created_at, users(username)")
@@ -270,12 +275,9 @@ router.post("/comment", async (req, res) => {
   }
 });
 
-
-
-
 router.get("/myposts/:id", async (req, res) => {
   try {
-    const { id } = req.params; // this is the user_id
+    const { id } = req.params;
 
     const { data, error } = await supabase
       .from("posts")
@@ -287,10 +289,10 @@ router.get("/myposts/:id", async (req, res) => {
         total_likes,
         users(username),
         comments(comment_id, comment_text, created_at, users(username))
-        `
+        `,
       )
-      .eq("user_id", Number(id)) // ✅ filter by user_id, not post_id
-      .order("created_at", { ascending: false }); // show newest first
+      .eq("user_id", Number(id))
+      .order("created_at", { ascending: false });
 
     if (error) throw error;
     const posts =
@@ -321,17 +323,17 @@ router.get("/profile/:user_id", async (req, res) => {
   if (!user_id) return res.status(400).json({ error: "User ID is required" });
 
   try {
-    // First try user_profiles
     let { data: profile, error } = await supabase
       .from("user_profiles")
-      .select("user_id, username, bio,gender,age, country, education, hobbies, profile_image, cover_image, created_at, updated_at")
+      .select(
+        "user_id, username, bio,gender,age, country, education, hobbies, profile_image, cover_image, created_at, updated_at",
+      )
       .eq("user_id", Number(user_id))
       .maybeSingle();
 
     if (error) throw error;
 
     if (!profile) {
-      // fallback to users table
       const { data: user, error: userError } = await supabase
         .from("users")
         .select("id, username, email, created_at")
@@ -352,7 +354,7 @@ router.get("/profile/:user_id", async (req, res) => {
           created_at: user.created_at,
           bio: null,
           gender: null,
-          age:null,
+          age: null,
           country: null,
           education: null,
           hobbies: null,
@@ -370,21 +372,31 @@ router.get("/profile/:user_id", async (req, res) => {
 });
 
 router.post("/profile/add", async (req, res) => {
-  let { user_id, username, bio, gender, age, country, education, hobbies, profile_image, cover_image } = req.body;
+  let {
+    user_id,
+    username,
+    bio,
+    gender,
+    age,
+    country,
+    education,
+    hobbies,
+    profile_image,
+    cover_image,
+  } = req.body;
 
   if (!user_id || !username)
     return res.status(400).json({ error: "User ID and username are required" });
 
-  user_id = Number(user_id); 
+  user_id = Number(user_id);
 
   try {
-    // Upsert profile directly, now username is part of user_profiles
     const { data, error } = await supabase
       .from("user_profiles")
       .upsert(
         {
           user_id,
-          username,  
+          username,
           bio,
           gender,
           age,
@@ -394,7 +406,7 @@ router.post("/profile/add", async (req, res) => {
           profile_image,
           cover_image,
         },
-        { onConflict: "user_id" }
+        { onConflict: "user_id" },
       )
       .select()
       .single();
@@ -407,6 +419,5 @@ router.post("/profile/add", async (req, res) => {
     res.status(500).json({ error: "Failed to save profile info" });
   }
 });
-
 
 export default router;
