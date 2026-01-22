@@ -11,22 +11,25 @@ import client from "./elasticsearch.js";
 const app = express();
 app.use(
   cors({
-    origin: ["https://social-media-project-one.vercel.app"], 
+    origin: ["https://social-media-project-one.vercel.app"],
     credentials: true,
-  })
+  }),
 );
 app.use(express.json());
 
 app.use("/api", authRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api", friendsRoutes);
-app.use("/api",chatsRoutes)
+app.use("/api", chatsRoutes);
 
 // Socket.IO Setup
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: ["https://social-media-project-one.vercel.app"],
+    origin: [
+      "https://social-media-project-one.vercel.app",
+      "http://localhost:3000",
+    ],
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -50,12 +53,11 @@ io.on("connection", (socket) => {
     if (!from || !to || !message || !username) return;
 
     try {
-    
       await supabase.from("messages").insert([
         {
           from_user: from,
           to_user: to,
-          username,   
+          username,
           message,
         },
       ]);
@@ -63,7 +65,11 @@ io.on("connection", (socket) => {
       // Send to recipient if online
       const targetSocket = users[to];
       if (targetSocket) {
-        io.to(targetSocket).emit("private_message", { from, username, message });
+        io.to(targetSocket).emit("private_message", {
+          from,
+          username,
+          message,
+        });
       }
 
       // Echo back to sender
@@ -96,9 +102,9 @@ app.get("/search-users", async (req, res) => {
 
     res.json(
       result.hits.hits.map((hit) => ({
-        id: hit._source.id,     // ✅ users table id
+        id: hit._source.id, // ✅ users table id
         ...hit._source,
-      }))
+      })),
     );
   } catch (err) {
     console.error("❌ Search error:", err);
@@ -133,7 +139,5 @@ app.post("/create-user", async (req, res) => {
   res.json({ message: "✅ User created and indexed", user: data });
 });
 
-
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
-
