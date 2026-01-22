@@ -22,7 +22,6 @@ app.use("/api/posts", postRoutes);
 app.use("/api", friendsRoutes);
 app.use("/api", chatsRoutes);
 
-// Socket.IO Setup
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
@@ -35,20 +34,17 @@ const io = new Server(server, {
   },
 });
 
-// Track online users: userId -> socketId
 const users = {};
 
 io.on("connection", (socket) => {
   console.log("✅ New client connected", socket.id);
 
-  // Register user
   socket.on("register", (userId) => {
     if (!userId) return;
     users[userId] = socket.id;
     console.log("Registered user", userId);
   });
 
-  // Private messaging
   socket.on("private_message", async ({ from, username, to, message }) => {
     if (!from || !to || !message || !username) return;
 
@@ -62,7 +58,6 @@ io.on("connection", (socket) => {
         },
       ]);
 
-      // Send to recipient if online
       const targetSocket = users[to];
       if (targetSocket) {
         io.to(targetSocket).emit("private_message", {
@@ -72,7 +67,6 @@ io.on("connection", (socket) => {
         });
       }
 
-      // Echo back to sender
       socket.emit("private_message", { from, username, message });
     } catch (err) {
       console.error("Failed to save message:", err.message);
@@ -85,7 +79,6 @@ io.on("connection", (socket) => {
   });
 });
 
-// -------------------- SEARCH USERS --------------------
 app.get("/search-users", async (req, res) => {
   try {
     const q = req.query.q;
@@ -102,7 +95,7 @@ app.get("/search-users", async (req, res) => {
 
     res.json(
       result.hits.hits.map((hit) => ({
-        id: hit._source.id, // ✅ users table id
+        id: hit._source.id,
         ...hit._source,
       })),
     );
@@ -112,11 +105,9 @@ app.get("/search-users", async (req, res) => {
   }
 });
 
-// -------------------- CREATE USER --------------------
 app.post("/create-user", async (req, res) => {
   const { username, email, password } = req.body;
 
-  // Insert into Supabase
   const { data, error } = await supabase
     .from("users")
     .insert([{ username, email, password }])
@@ -125,7 +116,6 @@ app.post("/create-user", async (req, res) => {
 
   if (error) return res.status(500).json({ error });
 
-  // Index into Elasticsearch
   await client.index({
     index: "users",
     id: data.id,
