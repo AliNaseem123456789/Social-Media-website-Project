@@ -1,33 +1,33 @@
 import React, { useState, useEffect } from "react";
 import {
-  Card,
-  CardContent,
   Typography,
-  Avatar,
-  IconButton,
   Stack,
   Skeleton,
+  Box,
+  Container,
+  IconButton,
+  Tooltip,
+  Fade,
+  Alert,
 } from "@mui/material";
-import { Link } from "react-router-dom";
-import FavoriteIcon from "@mui/icons-material/Favorite";
-import CommentIcon from "@mui/icons-material/Comment";
-
+import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
 import { postService } from "../services/postService";
-import { timeAgo } from "../../../utils/formatters";
+import PostCard from "../components/PostCard";
+import Sidebar from "../../../components/Sidebar";
 
 function Feed() {
   const [message, setMessage] = useState("");
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const userId = localStorage.getItem("user_id");
-
   const loadFeed = async () => {
     setLoading(true);
     try {
-      const data = await postService.getFeed();
+      const data = await postService.getFeed(userId);
       setPosts(data);
+      setMessage("");
     } catch (err) {
-      setMessage(err.response?.data?.message || "Something went wrong");
+      setMessage("Unable to reach the server");
     } finally {
       setLoading(false);
     }
@@ -42,174 +42,155 @@ function Feed() {
     loadFeed();
   }, [userId]);
 
+  // Inside Feed.jsx
   const handleLike = async (postId, e) => {
     e.preventDefault();
-    if (!userId) {
-      setMessage("You must be logged in to like a post");
-      return;
-    }
-
+    if (!userId) return;
     try {
       const res = await postService.likePost(userId, postId);
       if (res.success) {
-        setPosts((prevPosts) =>
-          prevPosts.map((post) =>
-            post.id === postId
-              ? { ...post, total_likes: res.total_likes }
-              : post,
+        setPosts((prev) =>
+          prev.map((p) =>
+            // Use p.post_id because that's what GraphQL provides
+            p.post_id === postId || p.id === postId
+              ? { ...p, total_likes: res.total_likes }
+              : p,
           ),
         );
       }
     } catch (err) {
-      setMessage("Error liking post");
+      console.error("Error liking post", err);
     }
   };
 
   return (
-    <div
-      style={{
-        backgroundColor: "#f0f2f5",
-        maxWidth: "600px",
-        margin: "20px auto",
-        padding: "12px",
-        borderRadius: "12px",
+    <Box
+      sx={{
+        display: "flex",
+        bgcolor: "#f4f7fe", // Softer, premium blue-grey background
+        minHeight: "100vh",
       }}
     >
-      <Typography
-        variant="h5"
-        sx={{ mb: 2, fontWeight: "bold", textAlign: "center", mt: 4 }}
-      >
-        Your Feed
-      </Typography>
+      <Sidebar />
 
-      {message && (
-        <Typography
-          variant="body2"
-          sx={{ color: "red", textAlign: "center", mb: 2 }}
+      <Container maxWidth="sm" sx={{ py: 6 }}>
+        {/* Header Section */}
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          sx={{ mb: 4 }}
         >
-          {message}
-        </Typography>
-      )}
+          <Box>
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 900,
+                color: "#1a1a1b",
+                letterSpacing: "-1px",
+              }}
+            >
+              Feed
+            </Typography>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ fontWeight: 500 }}
+            >
+              See what your friends are sharing
+            </Typography>
+          </Box>
 
-      {loading
-        ? Array.from(new Array(3)).map((_, i) => (
-            <Card
-              key={i}
-              sx={{ marginBottom: 3, borderRadius: 3, boxShadow: 1, p: 2 }}
+          <Tooltip title="Refresh Feed">
+            <IconButton
+              onClick={loadFeed}
+              sx={{
+                bgcolor: "white",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                "&:hover": { bgcolor: "#f0f0f0" },
+              }}
             >
-              <CardContent>
-                <Stack direction="row" spacing={2} alignItems="center" mb={1}>
-                  <Skeleton variant="circular" width={45} height={45} />
-                  <Skeleton width={120} height={20} />
-                </Stack>
-                <Skeleton
-                  variant="rectangular"
-                  height={150}
-                  sx={{ mb: 1, borderRadius: 2 }}
-                />
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <Skeleton width={40} />
-                  <Skeleton width={40} />
-                </Stack>
-              </CardContent>
-            </Card>
-          ))
-        : posts.map((post) => (
-            <Link
-              to={`/fullpost/${post.id}`}
-              key={post.id}
-              style={{ textDecoration: "none", color: "inherit" }}
+              <RefreshRoundedIcon color="primary" />
+            </IconButton>
+          </Tooltip>
+        </Stack>
+
+        {/* Error/Message Handling */}
+        {message && (
+          <Fade in={!!message}>
+            <Alert
+              severity="info"
+              sx={{ mb: 4, borderRadius: "16px", fontWeight: 600 }}
             >
-              <Card
-                sx={{
-                  marginBottom: 3,
-                  borderRadius: 3,
-                  boxShadow: 1,
-                  transition: "0.3s",
-                  "&:hover": { boxShadow: 6, transform: "translateY(-3px)" },
-                }}
+              {message}
+            </Alert>
+          </Fade>
+        )}
+
+        {/* Posts Area */}
+        <Stack spacing={1}>
+          {loading
+            ? // Improved Skeletons to match PostCard height
+              Array.from(new Array(3)).map((_, i) => (
+                <Box
+                  key={i}
+                  sx={{
+                    mb: 4,
+                    p: 3,
+                    bgcolor: "white",
+                    borderRadius: "24px",
+                    boxShadow: "0 10px 30px rgba(0,0,0,0.02)",
+                  }}
+                >
+                  <Stack direction="row" spacing={2} alignItems="center" mb={2}>
+                    <Skeleton variant="circular" width={50} height={50} />
+                    <Box sx={{ width: "40%" }}>
+                      <Skeleton
+                        width="100%"
+                        height={20}
+                        sx={{ borderRadius: "4px" }}
+                      />
+                      <Skeleton
+                        width="60%"
+                        height={15}
+                        sx={{ borderRadius: "4px" }}
+                      />
+                    </Box>
+                  </Stack>
+                  <Skeleton
+                    variant="rectangular"
+                    height={250}
+                    sx={{ borderRadius: "16px", mb: 2 }}
+                  />
+                  <Skeleton width="90%" height={20} />
+                  <Skeleton width="40%" height={20} />
+                </Box>
+              ))
+            : posts.map((post, index) => (
+                <Fade in={true} timeout={400 + index * 100} key={post.id}>
+                  <Box>
+                    <PostCard post={post} onLike={handleLike} />
+                  </Box>
+                </Fade>
+              ))}
+
+          {!loading && posts.length === 0 && !message && (
+            <Box sx={{ textAlign: "center", py: 10 }}>
+              <Typography
+                variant="h6"
+                color="text.secondary"
+                sx={{ fontWeight: 700 }}
               >
-                <CardContent>
-                  <Stack direction="row" spacing={2} alignItems="center" mb={1}>
-                    <Link
-                      to={`/profile/${post.user_id}`}
-                      style={{ textDecoration: "none" }}
-                    >
-                      <Avatar
-                        sx={{
-                          width: 45,
-                          height: 45,
-                          bgcolor: "#42a5f5",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        {post.username?.charAt(0).toUpperCase()}
-                      </Avatar>
-                    </Link>
-                    <div>
-                      <Typography
-                        variant="subtitle2"
-                        sx={{ fontWeight: "bold" }}
-                      >
-                        {post.username}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {timeAgo(post.created_at)}
-                      </Typography>
-                    </div>
-                  </Stack>
-
-                  <Typography
-                    variant="body1"
-                    sx={{
-                      marginBottom: 2,
-                      lineHeight: 1.6,
-                      whiteSpace: "pre-line",
-                    }}
-                  >
-                    {post.content}
-                  </Typography>
-
-                  {post.image_url && (
-                    <img
-                      src={post.image_url}
-                      alt="Post"
-                      style={{
-                        width: "100%",
-                        borderRadius: "12px",
-                        maxHeight: "400px",
-                        objectFit: "cover",
-                        marginBottom: "12px",
-                      }}
-                    />
-                  )}
-
-                  <Stack direction="row" spacing={1.5} alignItems="center">
-                    <IconButton
-                      onClick={(e) => handleLike(post.id, e)}
-                      color="error"
-                    >
-                      <FavoriteIcon />
-                    </IconButton>
-                    <Typography variant="body2">
-                      {post.total_likes || 0}
-                    </Typography>
-
-                    <IconButton
-                      color="primary"
-                      onClick={(e) => e.preventDefault()}
-                    >
-                      <CommentIcon />
-                    </IconButton>
-                    <Typography variant="body2">
-                      {post.comments?.length || 0}
-                    </Typography>
-                  </Stack>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-    </div>
+                Your feed is empty
+              </Typography>
+              <Typography variant="body2" color="text.disabled">
+                Follow some people to see their posts here!
+              </Typography>
+            </Box>
+          )}
+        </Stack>
+      </Container>
+    </Box>
   );
 }
 

@@ -1,15 +1,15 @@
-import { createTheme } from '@mui/material/styles';
+import { createTheme } from "@mui/material/styles";
 
 const theme = createTheme({
   palette: {
-    mode: 'dark',           // sets MUI dark mode
+    mode: "dark",
     background: {
-      default: '#1e1e1e',   // background everywhere
-      paper: '#2c2c2c',     // cards, panels
+      default: "#1e1e1e",
+      paper: "#2c2c2c",
     },
     text: {
-      primary: '#ffffff',
-      secondary: '#cccccc',
+      primary: "#ffffff",
+      secondary: "#cccccc",
     },
   },
 });
