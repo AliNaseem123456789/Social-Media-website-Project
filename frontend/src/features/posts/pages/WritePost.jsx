@@ -6,9 +6,14 @@ import {
   Paper,
   Typography,
   IconButton,
+  CircularProgress,
+  Fade,
+  Stack,
 } from "@mui/material";
-import PhotoCamera from "@mui/icons-material/PhotoCamera";
+import PhotoCameraRoundedIcon from "@mui/icons-material/PhotoCameraRounded";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { postService } from "../services/postService";
+
 function WritePost() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -25,6 +30,11 @@ function WritePost() {
     }
   };
 
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview("");
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const user_id = localStorage.getItem("user_id");
@@ -37,13 +47,10 @@ function WritePost() {
     setLoading(true);
     try {
       let image_url = "";
-
-      // 1. Upload image if it exists
       if (imageFile) {
         image_url = await postService.uploadImage(imageFile);
       }
-
-      // 2. Submit post data
+      // eslint-disable-next-line
       const res = await postService.createPost({
         user_id,
         title,
@@ -51,8 +58,7 @@ function WritePost() {
         image_url,
       });
 
-      // 3. Success handling
-      setMessage(res.message);
+      setMessage("Success! Your post is live.");
       setTitle("");
       setContent("");
       setImageFile(null);
@@ -65,105 +71,203 @@ function WritePost() {
   };
 
   return (
-    <>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "80vh",
-          p: 2,
-          mt: 6,
-          backgroundColor: "#f5f5f5",
-        }}
-      >
+    <Box
+      sx={{
+        backgroundColor: "#f4f7fe",
+        minHeight: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        p: 2,
+        pt: 10,
+      }}
+    >
+      <Fade in={true} timeout={800}>
         <Paper
-          elevation={6}
+          elevation={0}
           sx={{
-            p: 4,
-            borderRadius: 3,
-            width: { xs: "90%", sm: "70%", md: "50%" },
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
+            p: { xs: 3, md: 5 },
+            borderRadius: "32px",
+            width: "100%",
+            maxWidth: "600px",
+            bgcolor: "white",
+            border: "1px solid rgba(0,0,0,0.05)",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.05)",
           }}
         >
-          <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
-            Create a New Post
-          </Typography>
+          {/* Header */}
+          <Stack spacing={1} sx={{ mb: 4, textAlign: "center" }}>
+            <Typography
+              variant="h4"
+              sx={{ fontWeight: 900, color: "#1a1a1b", letterSpacing: "-1px" }}
+            >
+              Share Something
+            </Typography>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ fontWeight: 500 }}
+            >
+              What's on your mind today?
+            </Typography>
+          </Stack>
 
-          <Box
-            component="form"
-            onSubmit={handleSubmit}
-            sx={{ width: "100%", display: "flex", flexDirection: "column" }}
-          >
+          <Box component="form" onSubmit={handleSubmit} sx={{ width: "100%" }}>
             <TextField
-              label="Title"
+              placeholder="Give your post a title..."
+              variant="standard"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               fullWidth
-              sx={{ mb: 2 }}
-            />
-
-            <TextField
-              label="Post Content"
-              multiline
-              rows={6}
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              fullWidth
+              InputProps={{
+                disableUnderline: true,
+                sx: { fontSize: "1.4rem", fontWeight: 700, px: 1 },
+              }}
               sx={{ mb: 3 }}
             />
 
-            <Box sx={{ display: "flex", alignItems: "center", mb: 3, gap: 2 }}>
-              <input
-                accept="image/*"
-                type="file"
-                id="image-upload"
-                style={{ display: "none" }}
-                onChange={handleImageChange}
-              />
-              <label htmlFor="image-upload">
-                <IconButton color="primary" component="span">
-                  <PhotoCamera />
+            <TextField
+              placeholder="Tell your story..."
+              multiline
+              rows={5}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              fullWidth
+              variant="outlined"
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "20px",
+                  bgcolor: "#f9fafb",
+                  "& fieldset": { border: "none" },
+                  transition: "0.3s",
+                  "&.Mui-focused": {
+                    bgcolor: "#fff",
+                    boxShadow: "0 0 0 2px #1877f2",
+                  },
+                },
+                mb: 3,
+              }}
+            />
+
+            {/* Image Preview Area */}
+            {imagePreview && (
+              <Box
+                sx={{
+                  position: "relative",
+                  mb: 3,
+                  borderRadius: "20px",
+                  overflow: "hidden",
+                }}
+              >
+                <IconButton
+                  onClick={removeImage}
+                  sx={{
+                    position: "absolute",
+                    top: 10,
+                    right: 10,
+                    bgcolor: "rgba(0,0,0,0.5)",
+                    color: "white",
+                    "&:hover": { bgcolor: "rgba(0,0,0,0.7)" },
+                  }}
+                >
+                  <CloseRoundedIcon />
                 </IconButton>
-              </label>
-              {imagePreview && (
                 <img
                   src={imagePreview}
                   alt="preview"
                   style={{
-                    height: "80px",
-                    borderRadius: "8px",
+                    width: "100%",
+                    maxHeight: "300px",
                     objectFit: "cover",
                   }}
                 />
-              )}
+              </Box>
+            )}
+
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mt: 1,
+              }}
+            >
+              <Box>
+                <input
+                  accept="image/*"
+                  type="file"
+                  id="image-upload"
+                  style={{ display: "none" }}
+                  onChange={handleImageChange}
+                />
+                <label htmlFor="image-upload">
+                  <Button
+                    component="span"
+                    variant="outlined"
+                    startIcon={<PhotoCameraRoundedIcon />}
+                    sx={{
+                      borderRadius: "12px",
+                      textTransform: "none",
+                      fontWeight: 700,
+                      color: "#65676b",
+                      borderColor: "#e4e6e9",
+                      "&:hover": { bgcolor: "#f2f2f2", borderColor: "#d8dadf" },
+                    }}
+                  >
+                    Add Media
+                  </Button>
+                </label>
+              </Box>
+
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={loading || !content.trim()}
+                sx={{
+                  borderRadius: "12px",
+                  px: 4,
+                  py: 1.2,
+                  fontWeight: 800,
+                  textTransform: "none",
+                  fontSize: "1rem",
+                  boxShadow: "0 8px 24px rgba(24, 119, 242, 0.25)",
+                  "&:hover": {
+                    boxShadow: "0 12px 30px rgba(24, 119, 242, 0.4)",
+                  },
+                }}
+              >
+                {loading ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  "Post"
+                )}
+              </Button>
             </Box>
 
-            <Button
-              type="submit"
-              variant="contained"
-              size="large"
-              disabled={loading}
-              sx={{ borderRadius: 2, fontWeight: 600 }}
-            >
-              {loading ? "Submitting..." : "Submit"}
-            </Button>
-
             {message && (
-              <Typography
-                variant="body1"
-                color="secondary"
-                sx={{ mt: 2, textAlign: "center" }}
-              >
-                {message}
-              </Typography>
+              <Fade in={!!message}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    mt: 3,
+                    textAlign: "center",
+                    p: 1.5,
+                    borderRadius: "12px",
+                    bgcolor: message.includes("Success")
+                      ? "#e7f3ff"
+                      : "#ffebe8",
+                    color: message.includes("Success") ? "#1877f2" : "#f02849",
+                    fontWeight: 700,
+                  }}
+                >
+                  {message}
+                </Typography>
+              </Fade>
             )}
           </Box>
         </Paper>
-      </Box>
-    </>
+      </Fade>
+    </Box>
   );
 }
 

@@ -1,27 +1,22 @@
-import React from 'react';
-import Feed from './posts';
-import RecentChats from "./RecentChats";
-import Navbar from './Navbar';
-import Sidebar from './Sidebar';
-import { Box } from '@mui/material';
+import React from "react";
+import Feed from "../features/posts/pages/Feed";
+import RecentChats from "../features/friends/pages/RecentChats";
+import Sidebar from "./Sidebar";
+import { Box } from "@mui/material";
 
 function Home() {
   return (
-    <Box sx={{ bgcolor: "#f0f2f5", color: '#000', minHeight: '100vh' }}>
-      <Navbar />
-      <Box sx={{ display: 'flex', pt: 2, px: 2, alignItems: 'flex-start' }}> 
-      
-        <Box sx={{ display: 'flex', flexDirection: 'column', width: 280, mr: 2 }}>
+    <Box sx={{ bgcolor: "#f0f2f5", color: "#000", minHeight: "100vh" }}>
+      <Box sx={{ display: "flex", pt: 2, px: 2, alignItems: "flex-start" }}>
+        <Box
+          sx={{ display: "flex", flexDirection: "column", width: 280, mr: 2 }}
+        >
           <Sidebar />
-
-          {/* Sticky Recent Chats */}
           <Box sx={{ mt: 2 }}>
             <RecentChats />
           </Box>
         </Box>
-
-        {/* Main Feed */}
-        <Box sx={{ flex: 1, minWidth: 0,ml:-30 }}>
+        <Box sx={{ flex: 1, minWidth: 0, ml: -30 }}>
           <Feed />
         </Box>
       </Box>

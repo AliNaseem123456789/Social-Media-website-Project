@@ -1,53 +1,50 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import Sidebar from "../../../components/Sidebar";
 import { postService } from "../services/postService";
-import {
-  Card,
-  CardContent,
-  Typography,
-  Avatar,
-  IconButton,
-  Divider,
-  Box,
-} from "@mui/material";
-import FavoriteIcon from "@mui/icons-material/Favorite";
-import CommentIcon from "@mui/icons-material/Comment";
+import PostCard from "../components/PostCard";
+import { Typography, Box, Stack, Skeleton, Container } from "@mui/material";
 
 function MyPosts() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const userId = localStorage.getItem("user_id");
-  const username = localStorage.getItem("username");
 
+  // 1. Memoize the function using useCallback
+  const fetchMyPosts = useCallback(async () => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+    try {
+      const data = await postService.getUserPosts(userId);
+      setPosts(data);
+    } catch (error) {
+      console.error("Error fetching my posts:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]); // Only recreate this function if userId changes
+
+  // 2. Safely call the memoized function in useEffect
   useEffect(() => {
-    const fetchMyPosts = async () => {
-      if (!userId) {
-        setLoading(false);
-        return;
-      }
-      try {
-        const data = await postService.getUserPosts(userId);
-        setPosts(data);
-      } catch (error) {
-        console.error("Error fetching my posts:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchMyPosts();
-  }, [userId]);
+  }, [fetchMyPosts]); // ESLint is now happy
 
-  if (loading)
-    return (
-      <p style={{ textAlign: "center", marginTop: "100px" }}>Loading...</p>
-    );
-
-  if (!posts || posts.length === 0)
-    return (
-      <p style={{ textAlign: "center", marginTop: "100px" }}>No posts yet.</p>
-    );
+  const handleLike = async (postId, e) => {
+    e.preventDefault();
+    try {
+      const res = await postService.likePost(userId, postId);
+      if (res.success) {
+        setPosts((prev) =>
+          prev.map((p) =>
+            p.id === postId ? { ...p, total_likes: res.total_likes } : p,
+          ),
+        );
+      }
+    } catch (err) {
+      console.error("Error liking post");
+    }
+  };
 
   return (
     <div
@@ -57,81 +54,52 @@ function MyPosts() {
         minHeight: "100vh",
       }}
     >
-      {/* Sidebar */}
       <Sidebar />
-
-      {/* Posts area */}
-      <Box
-        sx={{
-          flex: 1,
-          margin: "80px auto", // space for navbar
-          maxWidth: "650px",
-          padding: "0 16px",
-        }}
-      >
+      <Container maxWidth="sm" sx={{ py: 10 }}>
         <Typography
-          variant="h5"
-          sx={{ mb: 2, fontWeight: "bold", textAlign: "center" }}
+          variant="h4"
+          sx={{ mb: 4, fontWeight: 800, color: "#1a1a1b" }}
         >
           My Posts
         </Typography>
 
-        {posts.map((post) => (
-          <Card
-            key={post.id || post.post_id}
-            sx={{ mb: 3, borderRadius: 3, boxShadow: 3 }}
-          >
-            <CardContent>
-              {/* Post Header */}
-              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                <Avatar sx={{ mr: 1, bgcolor: "#42a5f5" }}>
-                  {username?.charAt(0).toUpperCase()}
-                </Avatar>
-                <Box>
-                  <Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
-                    {username || "Me"}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {new Date(post.created_at).toLocaleString()}
-                  </Typography>
+        {loading ? (
+          Array.from(new Array(3)).map((_, i) => (
+            <Box
+              key={i}
+              sx={{ mb: 4, p: 3, bgcolor: "white", borderRadius: "24px" }}
+            >
+              <Stack direction="row" spacing={2} alignItems="center" mb={2}>
+                <Skeleton variant="circular" width={50} height={50} />
+                <Box sx={{ width: "40%" }}>
+                  <Skeleton width="100%" height={20} />
+                  <Skeleton width="60%" height={15} />
                 </Box>
-              </Box>
-
-              {/* Post Content */}
-              <Typography
-                variant="body1"
-                sx={{ mb: 2, whiteSpace: "pre-line" }}
-              >
-                {post.content}
-              </Typography>
-
-              <Divider />
-
-              {/* Action Row */}
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  mt: 1,
-                }}
-              >
-                <IconButton color="error" size="small">
-                  <FavoriteIcon />
-                </IconButton>
-                <Typography variant="body2">{post.total_likes || 0}</Typography>
-
-                <IconButton color="primary" size="small">
-                  <CommentIcon />
-                </IconButton>
-                <Typography variant="body2">
-                  {post.comments?.length || post.total_comments || 0}
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        ))}
-      </Box>
+              </Stack>
+              <Skeleton
+                variant="rectangular"
+                height={150}
+                sx={{ borderRadius: "16px", mb: 2 }}
+              />
+              <Skeleton width="100%" />
+            </Box>
+          ))
+        ) : !posts || posts.length === 0 ? (
+          <Box sx={{ textAlign: "center", mt: 10 }}>
+            <Typography variant="h6" color="text.secondary">
+              No posts yet. Share something with the world!
+            </Typography>
+          </Box>
+        ) : (
+          posts.map((post) => (
+            <PostCard
+              key={post.id || post.post_id}
+              post={post}
+              onLike={handleLike}
+            />
+          ))
+        )}
+      </Container>
     </div>
   );
 }

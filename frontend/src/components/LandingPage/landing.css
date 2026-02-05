@@ -10,7 +10,6 @@ body {
   color: #fff;
 }
 
-/* HERO */
 .hero {
   min-height: 100vh;
   display: flex;
@@ -61,7 +60,6 @@ body {
   color: #aaa;
 }
 
-/* BUTTONS */
 .btn {
   padding: 0.8rem 2rem;
   border-radius: 12px;
@@ -90,7 +88,6 @@ body {
   background: #ffffff11;
 }
 
-/* FEATURES */
 .features {
   padding: 6rem 2rem;
   text-align: center;
@@ -121,7 +118,6 @@ body {
   margin-bottom: 1rem;
 }
 
-/* HOW */
 .how {
   padding: 6rem 2rem;
   background: #050505;
@@ -140,7 +136,6 @@ body {
   color: #3b82f6;
 }
 
-/* TESTIMONIALS */
 .testimonials {
   padding: 6rem 2rem;
   text-align: center;
@@ -165,7 +160,6 @@ body {
   color: #aaa;
 }
 
-/* CTA */
 .cta {
   padding: 6rem 2rem;
   text-align: center;
@@ -179,7 +173,6 @@ body {
   gap: 1rem;
 }
 
-/* FOOTER */
 .footer {
   padding: 2rem;
   border-top: 1px solid #ffffff22;
