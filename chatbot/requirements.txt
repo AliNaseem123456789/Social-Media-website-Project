@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+pydantic
+qdrant-client
+sentence-transformers
+groq
+vaderSentiment
+pyspellchecker
+python-dotenv
+numpy
