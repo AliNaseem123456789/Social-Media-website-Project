@@ -16,6 +16,8 @@ import json
 import time
 from dotenv import load_dotenv
 
+# Import the new intent manager
+from intents import IntentManager
 # --- LOAD CONFIG ---
 load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -43,7 +45,7 @@ q_client = QdrantClient(
     api_key=QDRANT_API_KEY,
 )
 
-COLLECTION_NAME = "social_memory"
+COLLECTION_NAME = "my_collection"
 
 # --- CLOUD INITIALIZATION ---
 if not q_client.collection_exists(COLLECTION_NAME):
@@ -67,6 +69,11 @@ class ChatRequest(BaseModel):
     message: str
     user_id: str
 
+# --- INITIALIZE INTENT MANAGER ---
+print("🤖 Initializing Intent Manager...")
+intent_manager = IntentManager(embed_model)
+print("✅ Intent Manager ready!")
+
 # --- CORE LOGIC ---
 
 def normalize_text(text: str) -> str:
@@ -87,7 +94,15 @@ def correct_spelling(text: str) -> str:
 
 def extract_entity_and_value(text: str):
     prompt = f"""Extract structured personal info from this sentence: "{text}"
-    Output ONLY JSON like: {{"type": "profile", "entity": "city", "value": "London"}} or {{"type": "none"}}"""
+    
+    Examples:
+    "My name is John" -> {{"type": "profile", "entity": "name", "value": "John"}}
+    "I live in London" -> {{"type": "profile", "entity": "city", "value": "London"}}
+    "I like pizza" -> {{"type": "preference", "entity": "likes", "value": "pizza"}}
+    "I am a developer" -> {{"type": "profile", "entity": "job", "value": "developer"}}
+    
+    Output ONLY the JSON, no other text."""
+    
     response = groq_client.chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=[{"role": "user", "content": prompt}],
@@ -95,22 +110,43 @@ def extract_entity_and_value(text: str):
         max_tokens=100
     )
     try:
-        return json.loads(response.choices[0].message.content)
-    except:
+        result = response.choices[0].message.content
+        # Clean the response
+        result = result.strip()
+        if result.startswith('```json'):
+            result = result.replace('```json', '').replace('```', '')
+        if result.startswith('```'):
+            result = result.replace('```', '')
+        return json.loads(result)
+    except Exception as e:
+        print(f"❌ Entity extraction failed: {e}")
         return {"type": "none"}
 
 def smart_save_to_memory(text: str, user_id: int):
+    print(f"\n📝 Attempting to save: {text}")
+    
     clean = normalize_text(text)
     clean = correct_spelling(clean)
+    print(f"🧹 Cleaned: {clean}")
+    
     entity_info = extract_entity_and_value(clean)
+    print(f"🏷️ Extracted: {entity_info}")
 
     if entity_info.get("type") == "none":
+        print("❌ Not memory-worthy")
         return
 
     mem_type = entity_info.get("type")
     entity = entity_info.get("entity")
     value = entity_info.get("value")
+    
+    if not entity or not value:
+        print(f"❌ Missing entity or value")
+        return
+        
     canonical_text = f"The user's {entity} is {value}."
+    print(f"📄 Canonical: {canonical_text}")
+    
     vector = embed_model.encode(canonical_text).tolist()
 
     user_filter = Filter(must=[
@@ -136,9 +172,11 @@ def smart_save_to_memory(text: str, user_id: int):
             }
         )]
     )
+    print(f"✅ Saved to memory!")
 
     if existing_points:
         q_client.delete(collection_name=COLLECTION_NAME, points_selector=[existing_points[0].id])
+        print(f"🔄 Updated existing memory")
 
 def delete_memory(search_query: str, user_id: int):
     query_vector = embed_model.encode(search_query).tolist()
@@ -151,19 +189,6 @@ def delete_memory(search_query: str, user_id: int):
         q_client.delete(collection_name=COLLECTION_NAME, points_selector=[point_id])
         return f"I have forgotten: '{deleted_text}'"
     return "I couldn't find that memory."
-
-def classify_intent(message: str):
-    prompt = f"Classify intent [STORE, DELETE, RETRIEVE, CHAT] for: '{message}'. Output only the word."
-    response = groq_client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0,
-        max_tokens=10
-    )
-    intent = response.choices[0].message.content.strip().upper()
-    for valid in ["STORE", "DELETE", "RETRIEVE"]:
-        if valid in intent: return valid
-    return "CHAT"
 
 def extract_fact(message: str):
     prompt = f"Convert to 3rd person fact: '{message}'. Core Fact:"
@@ -189,7 +214,6 @@ def generate_multi_queries(query: str, groq_client):
     return response.choices[0].message.content.strip().split("\n")
 
 # --- MAIN CHAT ROUTE ---
-
 @app.post("/api/chat")
 async def chat(request: ChatRequest): 
     try:
@@ -200,7 +224,13 @@ async def chat(request: ChatRequest):
     sentiment = analyzer.polarity_scores(request.message)
     mood_context = "Cheerful" if sentiment['compound'] >= 0.05 else "Empathetic" if sentiment['compound'] <= -0.05 else "Helpful"
 
-    intent = classify_intent(request.message)
+    # USE THE NEW INTENT MANAGER
+    intent_result = intent_manager.classify_intent(request.message)
+    intent = intent_result['intent']
+    
+    print(f"\n💬 User: {request.message}")
+    print(f"🎯 Intent: {intent} (confidence: {intent_result['confidence']:.2f})")
+    
     context = ""
     status_update = ""
 
@@ -226,6 +256,7 @@ async def chat(request: ChatRequest):
             )
             all_results.extend([hit.payload["text"] for hit in search_result])
         context = "User Facts: " + " | ".join(list(set(all_results)))
+        print(f"📚 Retrieved {len(set(all_results))} facts")
 
     # SYSTEM PROMPT FOR POST SUGGESTIONS
     posting_rule = "If the user mentions an achievement or interesting update, suggest a social media post using the format: [CREATE_POST: Your draft here]."
@@ -243,7 +274,7 @@ async def chat(request: ChatRequest):
         )
         final_reply = completion.choices[0].message.content
         
-        # IDENTICAL EXTRACTION LOGIC FROM OLD CHATBOT
+        # EXTRACT POST SUGGESTION
         post_suggestion = None
         match = re.search(r"\[CREATE_POST:\s*(.*?)\]", final_reply, re.DOTALL | re.IGNORECASE)
         if match:
@@ -253,15 +284,23 @@ async def chat(request: ChatRequest):
         update_history(numeric_user_id, "user", request.message)
         update_history(numeric_user_id, "assistant", final_reply)
 
+        # Convert any numpy types to Python native types
         return {
-            "response": final_reply,
-            "intent": intent,
-            "action_taken": status_update,
-            "post_suggestion": post_suggestion 
+            "response": str(final_reply),  # Ensure string
+            "intent": str(intent),  # Ensure string
+            "intent_confidence": float(intent_result['confidence']),  # Convert to float
+            "action_taken": str(status_update) if status_update else None,
+            "post_suggestion": str(post_suggestion) if post_suggestion else None
         }
     except Exception as e:
-        return {"response": "I hit a snag!", "intent": intent}
-
+        print(f"❌ Error: {e}")
+        return {
+            "response": "I hit a snag!", 
+            "intent": intent,
+            "intent_confidence": 0.0,
+            "action_taken": None,
+            "post_suggestion": None
+        }
 @app.get("/api/user-data/{user_id}")
 async def get_user_data(user_id: str):
     points, _ = q_client.scroll(
@@ -270,6 +309,17 @@ async def get_user_data(user_id: str):
         with_payload=True
     )
     return {"memories": [p.payload.get("text") for p in points]}
+
+@app.get("/api/intent-test/{message}")
+async def test_intent(message: str):
+    """Test endpoint to check intent classification"""
+    result = intent_manager.classify_intent(message)
+    return {
+        "message": message,
+        "intent": result['intent'],
+        "confidence": result['confidence'],
+        "details": result['details']
+    }
 
 if __name__ == "__main__":
     import uvicorn

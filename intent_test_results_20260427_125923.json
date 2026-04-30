@@ -1,0 +1,51 @@
+{
+  "timestamp": "20260427_125923",
+  "summary": {
+    "store": {
+      "accuracy": 77.5,
+      "correct": 31,
+      "total": 40,
+      "misclassifications": {
+        "DELETE": 2,
+        "RETRIEVE": 3,
+        "CHAT": 4
+      }
+    },
+    "retrieve": {
+      "accuracy": 80.0,
+      "correct": 24,
+      "total": 30,
+      "misclassifications": {
+        "DELETE": 3,
+        "STORE": 3
+      }
+    },
+    "delete": {
+      "accuracy": 95.0,
+      "correct": 19,
+      "total": 20,
+      "misclassifications": {
+        "STORE": 1
+      }
+    },
+    "chat": {
+      "accuracy": 46.666666666666664,
+      "correct": 14,
+      "total": 30,
+      "misclassifications": {
+        "STORE": 9,
+        "RETRIEVE": 7
+      }
+    }
+  },
+  "confidence_distribution": {
+    "low": 38,
+    "medium": 44,
+    "high": 48
+  },
+  "failures": [
+    {
+      "message": "please remember my name is Michael",
+      "expected": "STORE",
+      "predicted": "DELETE",
+      "confidence": 

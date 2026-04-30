@@ -58,6 +58,9 @@ export const signup = async (req, res) => {
     });
   }
   try {
+    console.log("=== SIGNUP REQUEST RECEIVED ===");
+    console.log("Request body:", req.body);
+    console.log("Headers:", req.headers);
     const hashedPassword = await bcrypt.hash(password, 10);
     const { data: user, error } = await supabase
       .from("users")
