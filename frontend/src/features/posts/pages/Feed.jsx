@@ -40,6 +40,7 @@ function Feed() {
       return;
     }
     loadFeed();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   // Inside Feed.jsx

@@ -8,13 +8,12 @@ import {
   ListItemAvatar,
   ListItemButton,
   Avatar,
-  Divider,
   InputBase,
   alpha,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import { friendService } from "../services/friendsService";
-import { chatService } from "../services/chatService";
+// import { chatService } from "../services/chatService";
 
 function ChatSidebar() {
   const [friends, setFriends] = useState([]);
