@@ -61,10 +61,15 @@ const Chatbot = () => {
     setLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:8000/api/chat", {
-        message: input,
-        user_id: userId,
-      });
+      const res = await axios.post(
+        // "http://localhost:8000/api/chat",
+        "https://social-media-website-assistant.onrender.com/api/chat",
+
+        {
+          message: input,
+          user_id: userId,
+        },
+      );
       setMessages((prev) => [
         ...prev,
         {

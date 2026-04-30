@@ -70,9 +70,9 @@ function Navbar() {
         return;
       }
       try {
-        const res = await axios.get(
-          `https://social-media-website-project.onrender.com/search-users?q=${query}`,
-        );
+        const res = await axios.get
+        // `https://social-media-website-project.onrender.com/search-users?q=${query}`,
+        `http://localhost:5000/search-users?q=${query}`();
         setResults(res.data);
       } catch (err) {
         console.error("Search error:", err);
