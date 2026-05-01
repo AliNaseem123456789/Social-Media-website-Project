@@ -2,9 +2,9 @@ import React, { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { Box, Button, Typography, Paper } from "@mui/material";
 
-// const socket = io("https://social-media-website-project.onrender.com");
-const socket = io("https://localhost:5000");
-const ROOM_ID = "test-room-123"; // Static room for testing
+const socket = io("https://social-media-website-project.onrender.com");
+// const socket = io("http://localhost:5000");
+const ROOM_ID = "test-room-1234"; // Static room for testing
 
 // Google's public STUN servers (help find public IP addresses)
 const configuration = {

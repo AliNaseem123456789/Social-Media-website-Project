@@ -2,6 +2,7 @@ import apiClient from "../../../api/apiClient";
 import { io } from "socket.io-client";
 
 export const socket = io("https://social-media-website-project.onrender.com");
+// export const socket = io("http://localhost:5000");
 
 export const chatService = {
   getRecipientInfo: async (userId) => {

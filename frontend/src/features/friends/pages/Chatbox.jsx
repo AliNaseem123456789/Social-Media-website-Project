@@ -65,26 +65,31 @@ function ChatPage() {
     };
 
     initializeChat();
+
+    // ✅ Fixed: Only add messages from OTHER users
     socket.on("private_message", (data) => {
-      if (
-        String(data.from) === String(toUserId) ||
-        String(data.from) === String(currentUserId)
-      ) {
+      console.log("Received socket message:", data);
+
+      // Skip if message is from current user (already shown optimistically)
+      if (String(data.from) === String(currentUserId)) {
+        console.log("Skipping my own message (already shown)");
+        return;
+      }
+
+      // Add message from other user
+      if (String(data.from) === String(toUserId)) {
         setChat((prev) => [
           ...prev,
           {
-            from:
-              String(data.from) === String(currentUserId)
-                ? "Me"
-                : data.username,
+            from: data.username,
             text: data.message,
           },
         ]);
       }
     });
+
     return () => socket.off("private_message");
   }, [currentUserId, toUserId]);
-
   const sendMessage = () => {
     if (!message.trim()) return;
     socket.emit("private_message", {
