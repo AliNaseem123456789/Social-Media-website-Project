@@ -13,17 +13,23 @@ import {
   DialogTitle,
   DialogContent,
   Chip,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import SendRoundedIcon from "@mui/icons-material/SendRounded";
 import MoreVertRoundedIcon from "@mui/icons-material/MoreVertRounded";
 import VideocamIcon from "@mui/icons-material/Videocam";
 import CallEndIcon from "@mui/icons-material/CallEnd";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { chatService, socket } from "../services/chatService";
 import ChatSidebar from "../components/ChatSidebar";
 import VideoCall from "./VideoCall";
 
 function ChatPage() {
   const { user1, user2 } = useParams();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isTablet = useMediaQuery(theme.breakpoints.between("sm", "md"));
 
   const currentUserId = localStorage.getItem("user_id");
   const currentUsername = localStorage.getItem("username");
@@ -35,6 +41,7 @@ function ChatPage() {
   const [recipient, setRecipient] = useState(null);
   const [isVideoCallOpen, setIsVideoCallOpen] = useState(false);
   const [isCallActive, setIsCallActive] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(!isMobile);
   const messagesEndRef = useRef(null);
 
   const NAVBAR_HEIGHT = "64px";
@@ -91,7 +98,6 @@ function ChatPage() {
       }
     });
 
-    // Listen for incoming video call requests
     socket.on("video_call_request", ({ from, roomId: callRoomId }) => {
       if (String(from) === String(toUserId)) {
         const acceptCall = window.confirm(
@@ -132,7 +138,6 @@ function ChatPage() {
   const startVideoCall = () => {
     setIsVideoCallOpen(true);
     setIsCallActive(true);
-    // Notify the other user
     socket.emit("video_call_request", {
       from: currentUserId,
       to: toUserId,
@@ -143,6 +148,12 @@ function ChatPage() {
   const endVideoCall = () => {
     setIsVideoCallOpen(false);
     setIsCallActive(false);
+  };
+
+  const handleBack = () => {
+    if (isMobile) {
+      setShowSidebar(true);
+    }
   };
 
   return (
@@ -170,20 +181,28 @@ function ChatPage() {
           }}
         >
           <Grid container sx={{ height: "100%", flexWrap: "nowrap" }}>
-            <Grid
-              item
-              sx={{
-                width: { sm: "280px", md: "320px" },
-                flexShrink: 0,
-                borderRight: "1px solid #e0e0e0",
-                display: { xs: "none", sm: "block" },
-                height: "100%",
-                bgcolor: "#fff",
-              }}
-            >
-              <ChatSidebar />
-            </Grid>
+            {/* Sidebar - hidden on mobile when chat is open */}
+            {(showSidebar || !isMobile) && (
+              <Grid
+                item
+                sx={{
+                  width: { xs: "100%", sm: "280px", md: "320px" },
+                  flexShrink: 0,
+                  borderRight: "1px solid #e0e0e0",
+                  display: "block",
+                  height: "100%",
+                  bgcolor: "#fff",
+                  position: isMobile ? "absolute" : "relative",
+                  zIndex: isMobile ? 10 : 1,
+                }}
+              >
+                <ChatSidebar
+                  onSelectChat={() => isMobile && setShowSidebar(false)}
+                />
+              </Grid>
+            )}
 
+            {/* Chat Area */}
             <Grid
               item
               xs
@@ -196,10 +215,10 @@ function ChatPage() {
                 minWidth: 0,
               }}
             >
-              {/* Header with Video Call Button */}
+              {/* Header with Video Call Button - Mobile Responsive */}
               <Box
                 sx={{
-                  p: "10px 24px",
+                  p: { xs: "8px 12px", sm: "10px 24px" },
                   bgcolor: "#fff",
                   display: "flex",
                   alignItems: "center",
@@ -208,17 +227,35 @@ function ChatPage() {
                   zIndex: 1,
                 }}
               >
-                <Stack direction="row" spacing={2} alignItems="center">
+                <Stack direction="row" spacing={1} alignItems="center">
+                  {/* Back button for mobile when sidebar is hidden */}
+                  {isMobile && !showSidebar && (
+                    <IconButton
+                      onClick={() => setShowSidebar(true)}
+                      size="small"
+                    >
+                      <ArrowBackIcon />
+                    </IconButton>
+                  )}
+
                   <Avatar
                     src={recipient?.profile_image}
-                    sx={{ width: 40, height: 40 }}
+                    sx={{
+                      width: { xs: 36, sm: 40 },
+                      height: { xs: 36, sm: 40 },
+                    }}
                   >
                     {recipient?.username?.charAt(0).toUpperCase()}
                   </Avatar>
+
                   <Box>
                     <Typography
                       variant="subtitle1"
-                      sx={{ fontWeight: 600, lineHeight: 1.2 }}
+                      sx={{
+                        fontWeight: 600,
+                        lineHeight: 1.2,
+                        fontSize: { xs: "0.9rem", sm: "1rem" },
+                      }}
                     >
                       {recipient?.username || "Loading..."}
                     </Typography>
@@ -232,8 +269,8 @@ function ChatPage() {
                   </Box>
                 </Stack>
 
-                {/* Video Call Button */}
-                <Stack direction="row" spacing={1}>
+                {/* Video Call Button - Always visible */}
+                <Stack direction="row" spacing={isMobile ? 0.5 : 1}>
                   {!isCallActive ? (
                     <IconButton
                       onClick={startVideoCall}
@@ -241,23 +278,28 @@ function ChatPage() {
                         bgcolor: "#00a884",
                         color: "#fff",
                         "&:hover": { bgcolor: "#008f6f" },
+                        width: { xs: 32, sm: 40 },
+                        height: { xs: 32, sm: 40 },
                       }}
                     >
-                      <VideocamIcon />
+                      <VideocamIcon sx={{ fontSize: { xs: 18, sm: 24 } }} />
                     </IconButton>
                   ) : (
                     <Chip
                       icon={<VideocamIcon />}
-                      label="In Call"
+                      label={isMobile ? "Call" : "In Call"}
                       color="success"
                       onDelete={endVideoCall}
                       deleteIcon={<CallEndIcon />}
+                      size={isMobile ? "small" : "medium"}
                       sx={{ "& .MuiChip-deleteIcon": { color: "#fff" } }}
                     />
                   )}
-                  <IconButton size="small">
-                    <MoreVertRoundedIcon />
-                  </IconButton>
+                  {!isMobile && (
+                    <IconButton size="small">
+                      <MoreVertRoundedIcon />
+                    </IconButton>
+                  )}
                 </Stack>
               </Box>
 
@@ -266,8 +308,8 @@ function ChatPage() {
                 sx={{
                   flexGrow: 1,
                   overflowY: "auto",
-                  px: { xs: 6, md: 8, lg: 10 },
-                  py: 3,
+                  px: { xs: 1, sm: 6, md: 8, lg: 10 },
+                  py: { xs: 2, sm: 3 },
                   display: "flex",
                   flexDirection: "column",
                   gap: 0.5,
@@ -275,12 +317,7 @@ function ChatPage() {
               >
                 <Box
                   sx={{
-                    width: {
-                      xs: "170px",
-                      sm: "170px",
-                      md: "400px",
-                      lg: "600px",
-                    },
+                    width: "100%",
                     maxWidth: "1200px",
                     margin: "0 auto",
                   }}
@@ -299,12 +336,12 @@ function ChatPage() {
                         <Paper
                           elevation={1}
                           sx={{
-                            p: "8px 16px",
+                            p: { xs: "6px 12px", sm: "8px 16px" },
                             borderRadius: isMe
                               ? "12px 0px 12px 12px"
                               : "0px 12px 12px 12px",
-                            maxWidth: "85%",
-                            minWidth: "60px",
+                            maxWidth: { xs: "75%", sm: "85%" },
+                            minWidth: { xs: "50px", sm: "60px" },
                             bgcolor: isMe ? "#d9fdd3" : "#fff",
                             color: "#111b21",
                             boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
@@ -313,7 +350,7 @@ function ChatPage() {
                         >
                           <Typography
                             variant="body1"
-                            sx={{ fontSize: "0.95rem" }}
+                            sx={{ fontSize: { xs: "0.85rem", sm: "0.95rem" } }}
                           >
                             {msg.text}
                           </Typography>
@@ -325,11 +362,16 @@ function ChatPage() {
                 </Box>
               </Box>
 
-              {/* Input Area */}
-              <Box sx={{ p: "12px 24px", bgcolor: "#f0f2f5" }}>
+              {/* Input Area - Mobile Responsive */}
+              <Box
+                sx={{
+                  p: { xs: "8px 12px", sm: "12px 24px" },
+                  bgcolor: "#f0f2f5",
+                }}
+              >
                 <Stack
                   direction="row"
-                  spacing={1.5}
+                  spacing={1}
                   alignItems="center"
                   sx={{ maxWidth: "1200px", margin: "0 auto" }}
                 >
@@ -338,17 +380,23 @@ function ChatPage() {
                       flexGrow: 1,
                       bgcolor: "#fff",
                       borderRadius: "10px",
-                      px: 2.5,
+                      px: { xs: 1.5, sm: 2.5 },
                     }}
                   >
                     <TextField
                       fullWidth
                       variant="standard"
-                      placeholder="Type a message"
+                      placeholder="Type a message..."
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                      InputProps={{ disableUnderline: true, sx: { py: 1.5 } }}
+                      InputProps={{
+                        disableUnderline: true,
+                        sx: {
+                          py: { xs: 1, sm: 1.5 },
+                          fontSize: { xs: "0.85rem", sm: "1rem" },
+                        },
+                      }}
                     />
                   </Box>
                   <IconButton
@@ -360,10 +408,11 @@ function ChatPage() {
                       "&:hover": {
                         bgcolor: message.trim() ? "#008f6f" : "transparent",
                       },
-                      p: 1.5,
+                      width: { xs: 32, sm: 40 },
+                      height: { xs: 32, sm: 40 },
                     }}
                   >
-                    <SendRoundedIcon />
+                    <SendRoundedIcon sx={{ fontSize: { xs: 18, sm: 24 } }} />
                   </IconButton>
                 </Stack>
               </Box>
@@ -384,18 +433,27 @@ function ChatPage() {
           },
         }}
       >
-        <DialogTitle sx={{ bgcolor: "#2a2a2a", color: "#fff" }}>
+        <DialogTitle
+          sx={{ bgcolor: "#2a2a2a", color: "#fff", p: { xs: 1, sm: 2 } }}
+        >
           <Stack
             direction="row"
             justifyContent="space-between"
             alignItems="center"
           >
-            <Typography variant="h6">
+            <Typography
+              variant="h6"
+              sx={{ fontSize: { xs: "1rem", sm: "1.25rem" } }}
+            >
               Video Call with {recipient?.username}
             </Typography>
             <IconButton onClick={endVideoCall} sx={{ color: "#fff" }}>
               <CallEndIcon
-                sx={{ bgcolor: "#f44336", borderRadius: "50%", p: 1 }}
+                sx={{
+                  bgcolor: "#f44336",
+                  borderRadius: "50%",
+                  p: { xs: 0.5, sm: 1 },
+                }}
               />
             </IconButton>
           </Stack>
