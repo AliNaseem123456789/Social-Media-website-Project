@@ -10,9 +10,9 @@ import axios from "axios";
 
 // export default apiClient;
 const apiClient = axios.create({
-  baseURL: "http://localhost:5000/api",
+  // baseURL: "http://localhost:5000/api",
 
-  // baseURL: "https://social-media-website-project.onrender.com/api",
+  baseURL: "https://social-media-website-project.onrender.com/api",
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",

@@ -13,7 +13,6 @@ import {
   Fab,
   CircularProgress,
   Chip,
-  Divider,
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
@@ -30,17 +29,12 @@ const Chatbot = () => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isOpen, setIsOpen] = useState(true); // Start closed
+  const [isOpen, setIsOpen] = useState(true);
   const chatEndRef = useRef(null);
-
-  // Welcome message on first open
   const [hasWelcomed, setHasWelcomed] = useState(false);
-
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  // Show welcome message when chat is opened for the first time
   useEffect(() => {
     if (isOpen && !hasWelcomed) {
       setHasWelcomed(true);
@@ -70,10 +64,10 @@ const Chatbot = () => {
       alert("✅ Post created successfully! 🎉");
       setMessages((prev) => [
         ...prev,
-        { text: "✅ Post published successfully!", sender: "system" },
+        { text: "Post published successfully!", sender: "system" },
       ]);
     } catch (err) {
-      alert("❌ Failed to create post.");
+      alert(" Failed to create post.");
     }
   };
 

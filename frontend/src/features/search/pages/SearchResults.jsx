@@ -38,6 +38,7 @@ function SearchResults() {
   const [currentUserId] = useState(localStorage.getItem("user_id"));
   useEffect(() => {
     console.log("SearchResults mounted with query:", searchQuery);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery]);
 
   useEffect(() => {
@@ -48,6 +49,7 @@ function SearchResults() {
     } else {
       console.log("Query too short or empty:", searchQuery);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery]);
 
   const searchPeople = async () => {
