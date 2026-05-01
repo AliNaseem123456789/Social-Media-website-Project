@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import {
   Box,
   Paper,
@@ -12,7 +12,6 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  Button,
   Chip,
 } from "@mui/material";
 import SendRoundedIcon from "@mui/icons-material/SendRounded";
@@ -25,7 +24,7 @@ import VideoCall from "./VideoCall";
 
 function ChatPage() {
   const { user1, user2 } = useParams();
-  const navigate = useNavigate();
+
   const currentUserId = localStorage.getItem("user_id");
   const currentUsername = localStorage.getItem("username");
 
