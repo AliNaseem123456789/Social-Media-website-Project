@@ -14,12 +14,10 @@ import {
 import PersonAddRoundedIcon from "@mui/icons-material/PersonAddRounded";
 import Sidebar from "../../../components/Sidebar";
 import { friendService } from "../services/friendsService";
-
 function FriendRequestsPage() {
   const currentUserId = Number(localStorage.getItem("user_id"));
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     const fetchRequests = async () => {
       try {
@@ -31,10 +29,8 @@ function FriendRequestsPage() {
         setLoading(false);
       }
     };
-
     if (currentUserId) fetchRequests();
   }, [currentUserId]);
-
   const handleRespond = async (friendship_id, status) => {
     try {
       await friendService.respondToRequest(friendship_id, status);
@@ -45,17 +41,14 @@ function FriendRequestsPage() {
       console.error("Error responding to request:", err);
     }
   };
-
   return (
     <Box sx={{ bgcolor: "#f4f7fe", minHeight: "100vh", display: "flex" }}>
       <Sidebar />
-
       <Box
         component="main"
         sx={{ flexGrow: 1, pt: 12, px: { xs: 2, md: 4 }, pb: 6 }}
       >
         <Container maxWidth="sm">
-          {/* Header Section */}
           <Box sx={{ mb: 5, textAlign: "center" }}>
             <Box
               sx={{

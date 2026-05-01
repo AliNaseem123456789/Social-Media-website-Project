@@ -91,7 +91,6 @@ function ChatPage() {
       }
     });
 
-    // Listen for incoming video call requests
     socket.on("video_call_request", ({ from, roomId: callRoomId }) => {
       if (String(from) === String(toUserId)) {
         const acceptCall = window.confirm(
@@ -132,7 +131,6 @@ function ChatPage() {
   const startVideoCall = () => {
     setIsVideoCallOpen(true);
     setIsCallActive(true);
-    // Notify the other user
     socket.emit("video_call_request", {
       from: currentUserId,
       to: toUserId,
@@ -196,7 +194,6 @@ function ChatPage() {
                 minWidth: 0,
               }}
             >
-              {/* Header with Video Call Button */}
               <Box
                 sx={{
                   p: "10px 24px",

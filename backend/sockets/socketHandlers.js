@@ -1,18 +1,13 @@
-// socketHandlers.js
 import supabase from "../supabaseClient.js";
 const users = {};
-
 export const handleConnection = (io, socket) => {
   console.log(" New client connected:", socket.id);
-
-  // User registration
   socket.on("register", (userId) => {
     if (!userId) return;
     users[userId] = socket.id;
-    console.log(`📝 User ${userId} registered`);
+    console.log(`User ${userId} registered`);
   });
 
-  // Private chat messages
   socket.on("private_message", async ({ from, username, to, message }) => {
     if (!from || !to || !message || !username) return;
 
@@ -35,10 +30,9 @@ export const handleConnection = (io, socket) => {
     }
   });
 
-  // WebRTC Signaling
   socket.on("join-room", (roomId) => {
     socket.join(roomId);
-    console.log(`🎥 User joined room: ${roomId}`);
+    console.log(`User joined room: ${roomId}`);
   });
 
   socket.on("offer", ({ offer, roomId }) => {
@@ -59,8 +53,6 @@ export const handleConnection = (io, socket) => {
       io.to(targetSocket).emit("video_call_request", { from, roomId });
     }
   });
-
-  // Video call rejected (new)
   socket.on("video_call_rejected", ({ to, roomId }) => {
     const targetSocket = users[to];
     if (targetSocket) {
@@ -68,11 +60,10 @@ export const handleConnection = (io, socket) => {
     }
   });
 
-  // Disconnect
   socket.on("disconnect", () => {
     for (let id in users) {
       if (users[id] === socket.id) delete users[id];
     }
-    console.log("❌ Client disconnected:", socket.id);
+    console.log("Client disconnected:", socket.id);
   });
 };

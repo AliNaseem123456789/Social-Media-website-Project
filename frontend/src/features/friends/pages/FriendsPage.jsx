@@ -64,7 +64,6 @@ function FriendsPage() {
     <Box sx={{ bgcolor: "#f4f7fe", minHeight: "100vh", pt: 12, pb: 6 }}>
       <Sidebar />
       <Container maxWidth="lg">
-        {/* Header Section */}
         <Box
           sx={{
             mb: 4,
@@ -142,7 +141,6 @@ function FriendsPage() {
                     },
                   }}
                 >
-                  {/* Decorative Profile Header */}
                   <Box
                     sx={{ height: "60px", bgcolor: alpha("#1877f2", 0.1) }}
                   />
@@ -163,7 +161,6 @@ function FriendsPage() {
                     >
                       {friend.username.charAt(0).toUpperCase()}
                     </Avatar>
-
                     <Typography
                       variant="h6"
                       sx={{
@@ -229,7 +226,6 @@ function FriendsPage() {
   );
 }
 
-// Small helper for the Message button
 const IconButton = ({ children, onClick, sx }) => (
   <Box
     component="button"

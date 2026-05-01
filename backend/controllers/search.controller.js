@@ -8,7 +8,7 @@ export const searchUsers = async (req, res) => {
       return res.json([]);
     }
 
-    console.log(`🔍 Searching users for: ${q}`);
+    console.log(`Searching users for: ${q}`);
 
     const { data, error } = await supabase
       .from("users")
@@ -31,8 +31,7 @@ export const searchUsers = async (req, res) => {
 export const searchPosts = async (req, res) => {
   try {
     const q = req.query.q;
-    console.log("🔍 Search-posts called with q:", q);
-
+    console.log("Search-posts called with q:", q);
     if (!q || q.trim().length < 2) {
       return res.json([]);
     }
@@ -48,24 +47,19 @@ export const searchPosts = async (req, res) => {
       .ilike("content", `%${q}%`)
       .order("created_at", { ascending: false })
       .limit(20);
-
     if (postsError) throw postsError;
-
     if (!posts || posts.length === 0) {
       return res.json([]);
     }
-
     const postsWithCounts = await Promise.all(
       posts.map(async (post) => {
         const { count, error: countError } = await supabase
           .from("comments")
           .select("*", { count: "exact", head: true })
           .eq("post_id", post.id);
-
         if (countError) {
           console.error("Comment count error:", countError);
         }
-
         return {
           id: post.id,
           post_id: post.id,
@@ -80,7 +74,6 @@ export const searchPosts = async (req, res) => {
         };
       }),
     );
-
     res.json(postsWithCounts);
   } catch (err) {
     console.error("💥 Post search error:", err);
@@ -90,7 +83,6 @@ export const searchPosts = async (req, res) => {
     });
   }
 };
-
 export const combinedSearch = async (req, res) => {
   try {
     const q = req.query.q;
@@ -99,7 +91,7 @@ export const combinedSearch = async (req, res) => {
       return res.json({ users: [], posts: [] });
     }
 
-    console.log(`🔍 Combined search for: ${q}`);
+    console.log(`Combined search for: ${q}`);
 
     const { data: users, error: usersError } = await supabase
       .from("users")

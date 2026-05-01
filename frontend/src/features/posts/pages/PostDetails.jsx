@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import Sidebar from "../../../components/Sidebar";
 import { postService } from "../services/postService";
-import PostCard from "../components/PostCard"; // Use your beautiful shared component
+import PostCard from "../components/PostCard";
 import {
   Typography,
   Avatar,
@@ -53,7 +53,7 @@ function PostDetails() {
       });
       setPost((prev) => ({
         ...prev,
-        comments: [result.comment, ...(prev.comments || [])], // Newest first
+        comments: [result.comment, ...(prev.comments || [])],
       }));
       setNewComment("");
     } catch (error) {
@@ -104,11 +104,7 @@ function PostDetails() {
             >
               Discussion
             </Typography>
-
-            {/* Reuse the Beautiful PostCard */}
             <PostCard post={post} onLike={() => {}} />
-
-            {/* Modern Comment Section */}
             <Paper
               elevation={0}
               sx={{
@@ -122,8 +118,6 @@ function PostDetails() {
               <Typography variant="subtitle1" sx={{ mb: 3, fontWeight: 700 }}>
                 Comments ({post.comments?.length || 0})
               </Typography>
-
-              {/* Input Area */}
               <Box sx={{ display: "flex", gap: 2, mb: 4 }}>
                 <Avatar sx={{ width: 40, height: 40, bgcolor: "#6366f1" }}>
                   {localStorage.getItem("username")?.charAt(0).toUpperCase() ||
@@ -179,10 +173,7 @@ function PostDetails() {
                   </Box>
                 </Box>
               </Box>
-
               <Divider sx={{ mb: 3, opacity: 0.6 }} />
-
-              {/* Comments List */}
               <Stack spacing={3}>
                 {post.comments?.length > 0 ? (
                   post.comments.map((c) => (

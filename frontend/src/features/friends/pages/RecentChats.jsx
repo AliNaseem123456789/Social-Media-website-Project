@@ -44,12 +44,10 @@ function RecentChats() {
 
     const loadData = async () => {
       try {
-        // Run both API calls in parallel for better performance
         const [friendsData, chatsData] = await Promise.all([
           friendService.getFriends(currentUserId),
           chatService.getRecentChats(currentUserId),
         ]);
-
         setFriends(friendsData);
         setRecentChats(chatsData);
       } catch (error) {
@@ -111,14 +109,12 @@ function RecentChats() {
       </Paper>
     </>
   );
-
   const content = (
     <Box>
       {renderListSection("Recent Chats", recentChats, true)}
       {renderListSection("Friends", friends)}
     </Box>
   );
-
   return (
     <>
       {isMobile ? (
@@ -154,5 +150,4 @@ function RecentChats() {
     </>
   );
 }
-
 export default RecentChats;

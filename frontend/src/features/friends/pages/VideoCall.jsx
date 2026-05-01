@@ -1,4 +1,3 @@
-// VideoCall.jsx - FIXED VERSION
 import React, { useEffect, useRef, useState } from "react";
 import { Box, IconButton, Typography, Paper, Stack } from "@mui/material";
 import VideocamIcon from "@mui/icons-material/Videocam";
@@ -32,45 +31,34 @@ export default function VideoCall({
   const localStreamRef = useRef();
   const [isInitiator, setIsInitiator] = useState(false);
   const [callStarted, setCallStarted] = useState(false);
-
-  // Create peer connection with tracks
   const createPeerConnection = () => {
     if (peerConnection.current) {
       peerConnection.current.close();
     }
-
     const pc = new RTCPeerConnection(configuration);
-
     pc.onicecandidate = (event) => {
       if (event.candidate) {
-        console.log("📡 Sending ICE candidate");
+        console.log("Sending ICE candidate");
         socket.emit("ice-candidate", { candidate: event.candidate, roomId });
       }
     };
-
     pc.ontrack = (event) => {
-      console.log("🎥 Received remote track");
+      console.log("Received remote track");
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = event.streams[0];
       }
     };
-
     pc.onconnectionstatechange = () => {
-      console.log("🔗 Connection state:", pc.connectionState);
+      console.log("Connection state:", pc.connectionState);
     };
-
-    // Add existing local tracks if any
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach((track) => {
         pc.addTrack(track, localStreamRef.current);
       });
     }
-
     peerConnection.current = pc;
     return pc;
   };
-
-  // Start local camera/screen stream
   const startLocalStream = async () => {
     try {
       let stream;
@@ -90,19 +78,14 @@ export default function VideoCall({
           audio: micEnabled,
         });
       }
-
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
       }
       localStreamRef.current = stream;
-
-      // Add tracks to existing peer connection
       if (peerConnection.current) {
         stream.getTracks().forEach((track) => {
           peerConnection.current.addTrack(track, stream);
         });
-
-        // Re-negotiate if needed
         if (
           isInitiator &&
           !callStarted &&
@@ -115,11 +98,9 @@ export default function VideoCall({
       console.error("Error accessing media:", err);
     }
   };
-
   const createAndSendOffer = async () => {
     if (!peerConnection.current || !localStreamRef.current) return;
-
-    console.log("📞 Creating offer as initiator");
+    console.log("Creating offer as initiator");
     setCallStarted(true);
     const offer = await peerConnection.current.createOffer();
     await peerConnection.current.setLocalDescription(offer);
@@ -133,19 +114,16 @@ export default function VideoCall({
     }
     setTimeout(() => startLocalStream(), 100);
   };
-
   const toggleCamera = () => {
     setCameraEnabled(!cameraEnabled);
     const videoTrack = localStreamRef.current?.getVideoTracks()[0];
     if (videoTrack) videoTrack.enabled = !cameraEnabled;
   };
-
   const toggleMic = () => {
     setMicEnabled(!micEnabled);
     const audioTrack = localStreamRef.current?.getAudioTracks()[0];
     if (audioTrack) audioTrack.enabled = !micEnabled;
   };
-
   const endCall = () => {
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach((track) => track.stop());
@@ -156,11 +134,8 @@ export default function VideoCall({
     }
     onEndCall();
   };
-
   useEffect(() => {
-    console.log("🎬 VideoCall mounted for room:", roomId);
-
-    // Determine initiator (user with smaller ID)
+    console.log("VideoCall mounted for room:", roomId);
     const parts = roomId.split("_");
     const userA = parts[1];
     const isFirstUser = String(currentUserId) === String(userA);
@@ -168,10 +143,8 @@ export default function VideoCall({
     socket.emit("join-room", roomId);
     createPeerConnection();
     startLocalStream();
-
-    // Socket event handlers
     const handleOffer = async (offer) => {
-      console.log("📞 Received offer");
+      console.log("Received offer");
       if (!peerConnection.current) {
         createPeerConnection();
       }
@@ -183,18 +156,14 @@ export default function VideoCall({
       socket.emit("answer", { answer, roomId });
       setCallStarted(true);
     };
-
     const handleAnswer = async (answer) => {
-      console.log("📞 Received answer");
+      console.log("Received answer");
       if (peerConnection.current) {
         await peerConnection.current.setRemoteDescription(
           new RTCSessionDescription(answer),
         );
       }
     };
-
-    // ✅ Fixed code
-    // Frontend - expects direct candidate
     const handleIceCandidate = async (candidate) => {
       console.log("📡 Received ICE candidate", candidate);
       try {
@@ -206,12 +175,9 @@ export default function VideoCall({
         console.error("Error adding ICE candidate", e);
       }
     };
-
     socket.on("offer", handleOffer);
     socket.on("answer", handleAnswer);
     socket.on("ice-candidate", handleIceCandidate);
-
-    // If initiator, send offer after stream is ready
     if (isFirstUser) {
       const timer = setTimeout(() => {
         if (localStreamRef.current && !callStarted) {
@@ -220,7 +186,6 @@ export default function VideoCall({
       }, 2000);
       return () => clearTimeout(timer);
     }
-
     return () => {
       socket.off("offer", handleOffer);
       socket.off("answer", handleAnswer);
@@ -235,7 +200,6 @@ export default function VideoCall({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId, currentUserId]);
-
   return (
     <Box
       sx={{
@@ -252,8 +216,6 @@ export default function VideoCall({
           playsInline
           style={{ width: "100%", height: "100%", objectFit: "contain" }}
         />
-
-        {/* Connection status */}
         {!remoteVideoRef.current?.srcObject && (
           <Box
             sx={{
@@ -326,14 +288,12 @@ export default function VideoCall({
           >
             {cameraEnabled ? <VideocamIcon /> : <VideocamOffIcon />}
           </IconButton>
-
           <IconButton
             onClick={toggleMic}
             sx={{ bgcolor: "#3a3a3a", color: micEnabled ? "#fff" : "#f44336" }}
           >
             {micEnabled ? <MicIcon /> : <MicOffIcon />}
           </IconButton>
-
           <IconButton
             onClick={endCall}
             sx={{

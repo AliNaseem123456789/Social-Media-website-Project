@@ -61,7 +61,7 @@ const Chatbot = () => {
         content: content,
         image_url: null,
       });
-      alert("✅ Post created successfully! 🎉");
+      alert(" Post created successfully! ");
       setMessages((prev) => [
         ...prev,
         { text: "Post published successfully!", sender: "system" },
@@ -302,8 +302,6 @@ const Chatbot = () => {
                 )}
               </ListItem>
             ))}
-
-            {/* Loading Indicator */}
             {loading && (
               <ListItem sx={{ justifyContent: "flex-start", px: 0 }}>
                 <Box
@@ -352,8 +350,6 @@ const Chatbot = () => {
                 <SendIcon />
               </IconButton>
             </Stack>
-
-            {/* Quick action suggestions */}
             <Stack
               direction="row"
               spacing={1}

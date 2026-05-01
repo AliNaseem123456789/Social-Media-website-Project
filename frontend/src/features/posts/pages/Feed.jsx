@@ -24,9 +24,6 @@ function Feed() {
     setLoading(true);
     try {
       const data = await postService.getFeed(userId);
-      console.log("📸 Feed Data Sample:", data[0]);
-      console.log("📸 Image URL:", data[0]?.image_url);
-      console.log("📸 Full first post:", JSON.stringify(data[0], null, 2));
       setPosts(data);
       setMessage("");
     } catch (err) {
@@ -45,8 +42,6 @@ function Feed() {
     loadFeed();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
-
-  // Inside Feed.jsx
   const handleLike = async (postId, e) => {
     e.preventDefault();
     if (!userId) return;
@@ -55,7 +50,6 @@ function Feed() {
       if (res.success) {
         setPosts((prev) =>
           prev.map((p) =>
-            // Use p.post_id because that's what GraphQL provides
             p.post_id === postId || p.id === postId
               ? { ...p, total_likes: res.total_likes }
               : p,

@@ -7,7 +7,7 @@ import authRoutes from "./routes/authRoutes.js";
 import postRoutes from "./routes/postRoutes.js";
 import friendsRoutes from "./routes/friendsRoutes.js";
 import chatsRoutes from "./routes/chatsRoutes.js";
-import { requestLogger } from "./middleware/logger.js"; // Import here
+import { requestLogger } from "./middleware/logger.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import searchRoutes from "./routes/search.routes.js";
 import client from "./elasticsearch.js";
@@ -44,7 +44,6 @@ app.use(requestLogger);
 app.use(
   "/api/graphql",
   expressMiddleware(apolloServer, {
-    // This context makes 'supabase' available in your resolvers.js
     context: async () => ({ supabase }),
   }),
 );
@@ -72,6 +71,6 @@ io.on("connection", (socket) => {
 });
 const PORT = process.env.PORT || 5000;
 httpServer.listen(PORT, () => {
-  console.log(`🚀 API & Sockets running on port ${PORT}`);
-  console.log(`🚀 GraphQL ready at http://localhost:${PORT}/graphql`);
+  console.log(`API & Sockets running on port ${PORT}`);
+  console.log(`GraphQL ready at http://localhost:${PORT}/graphql`);
 });
