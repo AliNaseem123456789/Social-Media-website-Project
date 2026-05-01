@@ -1,6 +1,7 @@
 export const typeDefs = `#graphql
   type User {
     username: String
+    avatar_url: String   # optional, but good to have
   }
   type Comment {
     comment_id: ID
@@ -16,6 +17,7 @@ export const typeDefs = `#graphql
     username: String
     created_at: String 
     comments: [Comment]
+    avatar_url: String   # <-- add this line
   }
 
   type Query {

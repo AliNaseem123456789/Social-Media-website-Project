@@ -9,7 +9,7 @@ import friendsRoutes from "./routes/friendsRoutes.js";
 import chatsRoutes from "./routes/chatsRoutes.js";
 import { requestLogger } from "./middleware/logger.js"; // Import here
 import profileRoutes from "./routes/profileRoutes.js";
-
+import searchRoutes from "./routes/search.routes.js";
 import client from "./elasticsearch.js";
 
 import { ApolloServer } from "@apollo/server";
@@ -53,6 +53,7 @@ app.use("/api/posts", postRoutes);
 app.use("/api/friends", friendsRoutes);
 app.use("/api", chatsRoutes);
 app.use("/api/profile", profileRoutes);
+app.use("/api/search", searchRoutes);
 // const server = createServer(app);
 const io = new Server(httpServer, {
   cors: {
@@ -164,56 +165,104 @@ io.on("connection", (socket) => {
 //     });
 //   });
 // });
+// app.get("/search-users", async (req, res) => {
+//   try {
+//     const q = req.query.q;
 
-app.get("/search-users", async (req, res) => {
-  try {
-    const q = req.query.q;
+//     // Handle empty, undefined, or too short queries
+//     if (!q || q.trim().length < 2) {
+//       return res.json([]); // Return empty array instead of error
+//     }
 
-    const result = await client.search({
-      index: "users",
-      query: {
-        multi_match: {
-          query: q,
-          fields: ["username", "email"],
-        },
-      },
-    });
+//     console.log(`🔍 Searching for: ${q}`);
 
-    res.json(
-      result.hits.hits.map((hit) => ({
-        id: hit._source.id,
-        ...hit._source,
-      })),
-    );
-  } catch (err) {
-    console.error("Search error:", err);
-    res.status(500).json({ error: "User search failed" });
-  }
-});
+//     const { data, error } = await supabase
+//       .from("users")
+//       .select("id, username, email")
+//       .ilike("username", `%${q}%`)
+//       .limit(10);
 
-app.post("/create-user", async (req, res) => {
-  const { username, email, password } = req.body;
+//     if (error) {
+//       console.error("Supabase error:", error);
+//       return res.status(500).json({ error: "Search failed" });
+//     }
 
-  const { data, error } = await supabase
-    .from("users")
-    .insert([{ username, email, password }])
-    .select()
-    .single();
+//     res.json(data);
+//   } catch (err) {
+//     console.error("Search error:", err);
+//     res.status(500).json({ error: "User search failed" });
+//   }
+// });
 
-  if (error) return res.status(500).json({ error });
+// app.get("/search-posts", async (req, res) => {
+//   try {
+//     const q = req.query.q;
+//     console.log("🔍 Search-posts called with q:", q);
 
-  await client.index({
-    index: "users",
-    id: data.id,
-    document: {
-      username: data.username,
-      email: data.email,
-      created_at: data.created_at,
-    },
-  });
+//     if (!q || q.trim().length < 2) {
+//       return res.json([]);
+//     }
 
-  res.json({ message: "User created and indexed", user: data });
-});
+//     // Remove avatar_url from the select
+//     const { data, error } = await supabase
+//       .from("posts")
+//       .select(
+//         `
+//         *,
+//         users:user_id (id, username, email)
+//       `,
+//       ) // ← Removed avatar_url
+//       .ilike("content", `%${q}%`)
+//       .order("created_at", { ascending: false })
+//       .limit(20);
+
+//     if (error) throw error;
+
+//     const postsWithCounts = await Promise.all(
+//       (data || []).map(async (post) => {
+//         const { count, error: countError } = await supabase
+//           .from("comments")
+//           .select("*", { count: "exact", head: true })
+//           .eq("post_id", post.id);
+
+//         return {
+//           ...post,
+//           username: post.users?.username || "Unknown",
+//           comment_count: count || 0,
+//           // Remove avatar_url from response too
+//         };
+//       }),
+//     );
+
+//     res.json(postsWithCounts);
+//   } catch (err) {
+//     console.error("💥 Post search error:", err);
+//     res.status(500).json({ error: "Post search failed", details: err.message });
+//   }
+// });
+// app.post("/create-user", async (req, res) => {
+//   const { username, email, password } = req.body;
+
+//   const { data, error } = await supabase
+//     .from("users")
+//     .insert([{ username, email, password }])
+//     .select()
+//     .single();
+
+//   if (error) return res.status(500).json({ error });
+
+//   await client.index({
+//     index: "users",
+//     id: data.id,
+//     document: {
+//       username: data.username,
+//       email: data.email,
+//       created_at: data.created_at,
+//     },
+//   });
+
+//   res.json({ message: "User created and indexed", user: data });
+// });
 
 const PORT = process.env.PORT || 5000;
 httpServer.listen(PORT, () => {

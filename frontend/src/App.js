@@ -22,6 +22,7 @@ import Navbar from "./components/Navbar";
 import VideoCall from "./features/friends/pages/VideoCall";
 import ProtectedRoute from "./features/auth/components/RouteGuards";
 import Chatbot from "./pages/Chatbot";
+import SearchResults from "./features/search/pages/SearchResults";
 export default function App() {
   return (
     <Router>
@@ -45,6 +46,7 @@ export default function App() {
           <Route path="/chat/:user1/:user2" element={<ChatPage />} />
           <Route path="/recentchat/:id" element={<RecentChats />} />
           <Route path="/videocall" element={<VideoCall />} />
+          <Route path="/search" element={<SearchResults />} />
           {/* <Route path="/chatbot" element={<Chatbot />} /> */}
         </Route>
 

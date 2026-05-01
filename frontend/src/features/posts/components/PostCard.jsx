@@ -45,18 +45,22 @@ const PostCard = ({ post, onLike }) => {
               to={`/profile/${post.user_id}`}
               style={{ textDecoration: "none" }}
             >
-              <Avatar
-                sx={{
-                  width: 50,
-                  height: 50,
-                  background:
-                    "linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)",
-                  boxShadow: "0 4px 10px rgba(33, 150, 243, .3)",
-                }}
-              >
-                {post.username?.charAt(0).toUpperCase()}
-              </Avatar>
-            </Link>
+             
+                <Avatar
+                  src={post.avatar_url} // ← Use the avatar URL
+                  sx={{
+                    width: 50,
+                    height: 50,
+                    background:
+                      "linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)",
+                    boxShadow: "0 4px 10px rgba(33, 150, 243, .3)",
+                  }}
+                >
+                  {/* Show first letter if no avatar URL */}
+                  {!post.avatar_url && post.username?.charAt(0).toUpperCase()}
+                </Avatar>
+              </Link>
+          
             <Box>
               <Typography
                 variant="subtitle1"

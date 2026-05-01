@@ -24,6 +24,9 @@ function Feed() {
     setLoading(true);
     try {
       const data = await postService.getFeed(userId);
+      console.log("📸 Feed Data Sample:", data[0]);
+      console.log("📸 Image URL:", data[0]?.image_url);
+      console.log("📸 Full first post:", JSON.stringify(data[0], null, 2));
       setPosts(data);
       setMessage("");
     } catch (err) {

@@ -1,11 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom"; // Fixed import
 import { Box, CircularProgress, Container, Grid, Stack } from "@mui/material";
-
-// Services
 import { profileService } from "../services/profileService";
-
-// Local Components
 import ProfileHero from "../components/ProfileHero";
 import ProfileSidebar from "../components/ProfileSidebar";
 import ProfileStats from "../components/ProfileStats";

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   AppBar,
@@ -21,7 +20,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
 import AddCircleRoundedIcon from "@mui/icons-material/AddCircleRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
-
+import { searchService } from "../features/search/services/SearchService";
 // Modern Search Styling
 const Search = styled("div")(({ theme }) => ({
   position: "relative",
@@ -65,17 +64,19 @@ function Navbar() {
 
   useEffect(() => {
     const fetchUsers = async () => {
-      if (query.length < 2) {
+      // Don't search if query is empty or too short
+      if (!query || query.trim().length < 2) {
         setResults([]);
         return;
       }
+
       try {
-        const res = await axios.get
-        // `https://social-media-website-project.onrender.com/search-users?q=${query}`,
-        `http://localhost:5000/search-users?q=${query}`();
-        setResults(res.data);
+        // ✅ Using searchService instead of direct axios
+        const data = await searchService.searchUsers(query);
+        setResults(data);
       } catch (err) {
         console.error("Search error:", err);
+        setResults([]);
       }
     };
 
@@ -91,12 +92,20 @@ function Navbar() {
     navigate("/");
   };
 
+  const handleSearch = (e) => {
+    if (e.key === "Enter" && query.trim().length >= 2) {
+      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+      setQuery("");
+      setResults([]);
+    }
+  };
+
   return (
     <AppBar
       position="sticky"
       elevation={0}
       sx={{
-        bgcolor: "rgba(255, 255, 255, 0.8)", // Glass effect
+        bgcolor: "rgba(255, 255, 255, 0.8)",
         backdropFilter: "blur(10px)",
         borderBottom: "1px solid rgba(0, 0, 0, 0.05)",
         zIndex: 1201,
@@ -128,6 +137,7 @@ function Navbar() {
                   placeholder="Search network..."
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
+                  onKeyPress={handleSearch}
                 />
               </Search>
 
@@ -142,6 +152,7 @@ function Navbar() {
                     right: 0,
                     borderRadius: "12px",
                     overflow: "hidden",
+                    zIndex: 1000,
                   }}
                 >
                   <List sx={{ p: 0 }}>
@@ -151,6 +162,7 @@ function Navbar() {
                         key={user.id}
                         onClick={() => {
                           setQuery("");
+                          setResults([]);
                           navigate(`/profile/${user.id}`);
                         }}
                         sx={{ "&:hover": { bgcolor: "#f0f2f5" } }}
@@ -171,6 +183,25 @@ function Navbar() {
                         />
                       </ListItem>
                     ))}
+                    {/* "View All Results" button */}
+                    <ListItem
+                      button
+                      onClick={() => {
+                        const searchTerm = query;
+                        setQuery("");
+                        setResults([]);
+                        navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
+                      }}
+                      sx={{ justifyContent: "center", bgcolor: "#f0f2f5" }}
+                    >
+                      <Typography
+                        variant="body2"
+                        color="primary"
+                        fontWeight="bold"
+                      >
+                        View all results for "{query}" →
+                      </Typography>
+                    </ListItem>
                   </List>
                 </Paper>
               )}

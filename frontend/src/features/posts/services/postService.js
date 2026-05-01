@@ -11,6 +11,7 @@ export const postService = {
           image_url
           total_likes
           username
+            avatar_url 
           created_at  # <--- CRITICAL: Request this field
           comments {
             comment_id

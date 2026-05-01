@@ -76,7 +76,6 @@ function AddProfileInfoForm({ open, handleClose, userId, onSaved }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       const data = new FormData();
       data.append("user_id", userId);
@@ -87,9 +86,7 @@ function AddProfileInfoForm({ open, handleClose, userId, onSaved }) {
 
       if (profileImageFile) data.append("profileImage", profileImageFile);
       if (coverImageFile) data.append("coverImage", coverImageFile);
-
       const res = await profileService.updateProfile(data);
-
       if (res.success) {
         onSaved();
         handleClose();
@@ -101,7 +98,6 @@ function AddProfileInfoForm({ open, handleClose, userId, onSaved }) {
       setLoading(false);
     }
   };
-
   return (
     <Modal open={open} onClose={handleClose} closeAfterTransition>
       <Box sx={style}>
@@ -110,7 +106,6 @@ function AddProfileInfoForm({ open, handleClose, userId, onSaved }) {
         </Typography>
 
         <Stack component="form" spacing={2} onSubmit={handleSubmit}>
-          {}
           {[
             { label: "Username", name: "username" },
             { label: "Bio", name: "bio", multiline: true, rows: 3 },
@@ -131,8 +126,6 @@ function AddProfileInfoForm({ open, handleClose, userId, onSaved }) {
               fullWidth
             />
           ))}
-
-          {}
           <Box>
             <Typography variant="body2" gutterBottom fontWeight="bold">
               Profile Image
@@ -155,7 +148,6 @@ function AddProfileInfoForm({ open, handleClose, userId, onSaved }) {
               />
             </Button>
           </Box>
-
           <Box>
             <Typography variant="body2" gutterBottom fontWeight="bold">
               Cover Image
@@ -176,7 +168,6 @@ function AddProfileInfoForm({ open, handleClose, userId, onSaved }) {
               />
             </Button>
           </Box>
-
           <Button
             type="submit"
             variant="contained"
@@ -190,5 +181,4 @@ function AddProfileInfoForm({ open, handleClose, userId, onSaved }) {
     </Modal>
   );
 }
-
 export default AddProfileInfoForm;
