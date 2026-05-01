@@ -53,6 +53,21 @@ export const handleConnection = (io, socket) => {
     socket.to(roomId).emit("ice-candidate", candidate);
   });
 
+  socket.on("video_call_request", ({ from, to, roomId }) => {
+    const targetSocket = users[to];
+    if (targetSocket) {
+      io.to(targetSocket).emit("video_call_request", { from, roomId });
+    }
+  });
+
+  // Video call rejected (new)
+  socket.on("video_call_rejected", ({ to, roomId }) => {
+    const targetSocket = users[to];
+    if (targetSocket) {
+      io.to(targetSocket).emit("video_call_rejected", { roomId });
+    }
+  });
+
   // Disconnect
   socket.on("disconnect", () => {
     for (let id in users) {
