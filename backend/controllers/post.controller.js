@@ -1,19 +1,30 @@
 import supabase from "../supabaseClient.js";
 export const createPost = async (req, res) => {
   const { user_id, content, image_url } = req.body;
-  if (!content)
-    return res
-      .status(400)
-      .json({ success: false, message: "Post cannot be empty" });
+  
+  if (!content && !image_url) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "Post must have content or an image" 
+    });
+  }
+  
   try {
     const { data, error } = await supabase
       .from("posts")
-      .insert([{ user_id, content, image_url }])
-      .select("post_id, content, created_at")
+      .insert([{ user_id, content, image_url: image_url || null }])
+      .select("post_id, content, created_at, image_url")
       .single();
+      
     if (error) throw error;
-    res.json({ success: true, message: "Post created", post: data });
+    
+    res.json({ 
+      success: true, 
+      message: "Post created", 
+      post: data 
+    });
   } catch (err) {
+    console.error('Create post error:', err);
     res.status(500).json({ success: false, message: "Database error" });
   }
 };

@@ -17,26 +17,37 @@ export const resolvers = {
       if (error) throw new Error(error.message);
 
       return posts.map((p) => {
-        // Get the profile image filename
+        // Avatar URL
         const profileImage = p.users?.user_profiles?.profile_image;
-
-        // Construct full URL (adjust based on your storage setup)
         let avatarUrl = null;
         if (profileImage) {
-          // If it's already a full URL, use it
           if (profileImage.startsWith("http")) {
             avatarUrl = profileImage;
           } else {
-            // Otherwise, construct the full URL
             avatarUrl = `https://cdxeqrhdascyezirccrm.supabase.co/storage/v1/object/public/avatars/${profileImage}`;
           }
+        }
+
+        // Post Image URL - ONLY ONE declaration
+        let fullImageUrl = null;
+        if (p.image_url) {
+          console.log('Image URL exists:', p.image_url);
+          if (p.image_url.startsWith("http")) {
+            fullImageUrl = p.image_url;
+            console.log('Already full URL:', fullImageUrl);
+          } else {
+            fullImageUrl = `https://cdxeqrhdascyezirccrm.supabase.co/storage/v1/object/public/post-images/${p.image_url}`;
+            console.log('Constructed URL:', fullImageUrl);
+          }
+        } else {
+          console.log('No image_url for this post');
         }
 
         return {
           post_id: p.post_id,
           user_id: p.user_id,
           content: p.content,
-          image_url: p.image_url,
+          image_url: fullImageUrl,
           total_likes: p.total_likes || 0,
           created_at: p.created_at,
           username: p.users?.username || "Unknown User",
