@@ -38,6 +38,6 @@ router.post("/like", likePost);
 router.post("/comment", addComment);
 router.get("/fullpost/:id", getFullPost);
 router.get("/myposts/:id", getMyPosts);
-router.post('/upload', upload.single('image'), uploadPostImage); // 👈 Fixed path
+router.post('/upload', upload.single('image'), uploadPostImage); 
 
 export default router;
