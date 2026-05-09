@@ -13,6 +13,12 @@ import {
   Fab,
   CircularProgress,
   Chip,
+  Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField as MuiTextField,
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
@@ -20,8 +26,13 @@ import CloseIcon from "@mui/icons-material/Close";
 import ForumIcon from "@mui/icons-material/Forum";
 import MemoryIcon from "@mui/icons-material/Memory";
 import FavoriteIcon from "@mui/icons-material/Favorite";
+
 import PostAddIcon from "@mui/icons-material/PostAdd";
 import DeleteIcon from "@mui/icons-material/Delete";
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import GroupAddIcon from "@mui/icons-material/GroupAdd";
+import ChatIcon from "@mui/icons-material/Chat";
+import CelebrationIcon from "@mui/icons-material/Celebration";
 import axios from "axios";
 import { postService } from "../features/posts/services/postService";
 
@@ -30,11 +41,48 @@ const Chatbot = () => {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
+  const [commentDialogOpen, setCommentDialogOpen] = useState(false);
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [commentText, setCommentText] = useState("");
   const chatEndRef = useRef(null);
   const [hasWelcomed, setHasWelcomed] = useState(false);
+ const [currentPath, setCurrentPath] = useState(window.location.pathname);
+  
+  // ✅ Listen for navigation changes
+  useEffect(() => {
+    const handlePathChange = () => {
+      setCurrentPath(window.location.pathname);
+    };
+    
+    // Listen for popstate (back/forward buttons)
+    window.addEventListener('popstate', handlePathChange);
+    
+    // Also need to listen for React Router navigation
+    // Create a MutationObserver to detect when the page content changes
+    const observer = new MutationObserver(() => {
+      if (window.location.pathname !== currentPath) {
+        setCurrentPath(window.location.pathname);
+      }
+    });
+    
+    observer.observe(document.getElementById('root') || document.body, {
+      childList: true,
+      subtree: true
+    });
+    
+    return () => {
+      window.removeEventListener('popstate', handlePathChange);
+      observer.disconnect();
+    };
+  }, [currentPath]);
+  
+const userId = localStorage.getItem("user_id");
+  const path = window.location.pathname;
+  const isAuthPage = path === "/" || path === "/login" || path === "/signup";
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+  
   useEffect(() => {
     if (isOpen && !hasWelcomed) {
       setHasWelcomed(true);
@@ -48,8 +96,10 @@ const Chatbot = () => {
     }
   }, [isOpen, hasWelcomed]);
 
-  const userId = localStorage.getItem("user_id");
-
+  // const userId = localStorage.getItem("user_id");
+if (!userId || isAuthPage) {
+    return null; // Component doesn't render at all
+  }
   const handleCreatePost = async (content) => {
     if (!userId) {
       alert("Please log in to post!");
@@ -61,13 +111,89 @@ const Chatbot = () => {
         content: content,
         image_url: null,
       });
-      alert(" Post created successfully! ");
+      alert("✅ Post created successfully!");
       setMessages((prev) => [
         ...prev,
         { text: "Post published successfully!", sender: "system" },
       ]);
     } catch (err) {
-      alert(" Failed to create post.");
+      alert("❌ Failed to create post.");
+    }
+  };
+
+  const handleSendFriendRequest = async (friendId, allIds = null) => {
+    if (!userId) {
+      alert("Please log in to send friend requests!");
+      return;
+    }
+    
+    const friendIds = allIds || [friendId];
+    
+    try {
+      const res = await axios.post("http://localhost:8000/api/chat", {
+        message: `send_to_all_${JSON.stringify(friendIds)}`,
+        user_id: userId,
+      });
+      
+      alert(res.data.response || "Friend request sent!");
+      
+      setMessages((prev) => [
+        ...prev,
+        { text: res.data.response, sender: "system" },
+      ]);
+      
+    } catch (err) {
+      console.error("Error sending friend request:", err);
+      alert("❌ Failed to send friend request.");
+    }
+  };
+
+  // NEW: Engagement Handlers
+  const handleLike = async (postId) => {
+    if (!userId) {
+      alert("Please log in to like posts!");
+      return;
+    }
+    
+    try {
+      const res = await axios.post("http://localhost:8000/api/chat", {
+        message: `like_post_${postId}`,
+        user_id: userId,
+      });
+      
+      alert(res.data.response || "Post liked!");
+      
+    } catch (err) {
+      console.error("Error liking post:", err);
+      alert("❌ Failed to like post.");
+    }
+  };
+
+  const handleOpenCommentDialog = (post) => {
+    setSelectedPost(post);
+    setCommentText("");
+    setCommentDialogOpen(true);
+  };
+
+  const handleSubmitComment = async () => {
+    if (!commentText.trim()) {
+      alert("Please enter a comment!");
+      return;
+    }
+    
+    try {
+      const res = await axios.post("http://localhost:8000/api/chat", {
+        message: `comment_post_${selectedPost.post_id}_${commentText}`,
+        user_id: userId,
+      });
+      
+      alert(res.data.response || "Comment added!");
+      setCommentDialogOpen(false);
+      setCommentText("");
+      
+    } catch (err) {
+      console.error("Error adding comment:", err);
+      alert("❌ Failed to add comment.");
     }
   };
 
@@ -81,8 +207,7 @@ const Chatbot = () => {
 
     try {
       const res = await axios.post(
-        "https://social-media-website-assistant.onrender.com/api/chat",
-        // "http://localhost:8000/api/chat",
+        "http://localhost:8000/api/chat",
         {
           message: input,
           user_id: userId,
@@ -95,6 +220,10 @@ const Chatbot = () => {
           text: res.data.response,
           sender: "ai",
           suggestion: res.data.post_suggestion,
+          friendSuggestions: res.data.friend_suggestions,
+          engagementSuggestions: res.data.engagement_suggestions,
+          birthdaySuggestions: res.data.birthday_suggestions,
+          inactiveFriends: res.data.inactive_friends,
           intent: res.data.intent,
           action: res.data.action_taken,
         },
@@ -143,12 +272,26 @@ const Chatbot = () => {
         sx={{ m: 0.5 }}
         variant="outlined"
       />
+      <Chip
+        icon={<PersonAddIcon />}
+        label="Suggest friends"
+        size="small"
+        sx={{ m: 0.5 }}
+        variant="outlined"
+      />
+      <Chip
+        icon={<ChatIcon />}
+        label="Engage with posts"
+        size="small"
+        sx={{ m: 0.5 }}
+        variant="outlined"
+      />
       <Typography
         variant="caption"
         display="block"
         sx={{ mt: 1, color: "text.secondary" }}
       >
-        Try: "My name is John", "I love pizza", or "Help me write a post"
+        Try: "Suggest friends", "Help me write a post", or "What should I like?"
       </Typography>
     </Box>
   );
@@ -265,6 +408,8 @@ const Chatbot = () => {
                   )}
                 </Box>
                 {msg.features && <FeatureList />}
+                
+                {/* Post Suggestion Button */}
                 {msg.suggestion && (
                   <Paper
                     variant="outlined"
@@ -281,7 +426,7 @@ const Chatbot = () => {
                       color="primary"
                       fontWeight="bold"
                     >
-                      AI Suggestion:
+                      📝 AI Suggestion:
                     </Typography>
                     <Typography
                       variant="body2"
@@ -298,6 +443,177 @@ const Chatbot = () => {
                     >
                       Post Now
                     </Button>
+                  </Paper>
+                )}
+                
+                {/* Engagement Suggestions */}
+                {msg.engagementSuggestions && msg.engagementSuggestions.length > 0 && (
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      mt: 1,
+                      p: 1.5,
+                      bgcolor: "white",
+                      width: "100%",
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color="primary"
+                      fontWeight="bold"
+                      sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                    >
+                      <FavoriteIcon fontSize="small" />
+                      💬 Posts to Engage With:
+                    </Typography>
+                    
+                    <Divider sx={{ my: 1 }} />
+                    
+                    {msg.engagementSuggestions.map((post, idx) => (
+                      <Box key={post.post_id} sx={{ mb: 2 }}>
+                        <Typography variant="body2" fontWeight="bold">
+                          {post.username}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          "{post.content}"
+                        </Typography>
+                        <Typography variant="caption" color="primary" display="block" sx={{ mt: 0.5 }}>
+                          💡 {post.reason}
+                        </Typography>
+                        <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                          <Button
+                            size="small"
+                            variant="contained"
+                            onClick={() => handleLike(post.post_id)}
+                            startIcon={<FavoriteIcon />}
+                          >
+                            Like ({post.total_likes || 0})
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => handleOpenCommentDialog(post)}
+                            startIcon={<ChatIcon />}
+                          >
+                            Comment
+                          </Button>
+                        </Stack>
+                        {idx < msg.engagementSuggestions.length - 1 && <Divider sx={{ mt: 1 }} />}
+                      </Box>
+                    ))}
+                  </Paper>
+                )}
+                
+                {/* Birthday Suggestions */}
+                {msg.birthdaySuggestions && msg.birthdaySuggestions.length > 0 && (
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      mt: 1,
+                      p: 1.5,
+                      bgcolor: "#fff3e0",
+                      width: "100%",
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color="warning.main"
+                      fontWeight="bold"
+                      sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                    >
+                      <CelebrationIcon fontSize="small" />
+                      🎂 Upcoming Birthdays:
+                    </Typography>
+                    
+                    <Divider sx={{ my: 1 }} />
+                    
+                    {msg.birthdaySuggestions.map((birthday, idx) => (
+                      <Box key={birthday.friend_id}>
+                        <Typography variant="body2">
+                          <strong>{birthday.username}</strong> - 
+                          {birthday.days_until === 0 ? " TODAY! 🎉" : ` in ${birthday.days_until} days (${birthday.birth_date})`}
+                        </Typography>
+                        {idx < msg.birthdaySuggestions.length - 1 && <Divider sx={{ mt: 1 }} />}
+                      </Box>
+                    ))}
+                  </Paper>
+                )}
+                
+                {/* Friend Suggestions */}
+                {msg.friendSuggestions && msg.friendSuggestions.length > 0 && (
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      mt: 1,
+                      p: 1.5,
+                      bgcolor: "white",
+                      width: "100%",
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color="primary"
+                      fontWeight="bold"
+                      sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                    >
+                      <PersonAddIcon fontSize="small" />
+                      👥 Friend Suggestions:
+                    </Typography>
+                    
+                    <Divider sx={{ my: 1 }} />
+                    
+                    {msg.friendSuggestions.map((friend, idx) => (
+                      <Box key={friend.id} sx={{ mb: 2 }}>
+                        <Stack direction="row" justifyContent="space-between" alignItems="center">
+                          <Box>
+                            <Typography variant="body2" fontWeight="bold">
+                              {friend.username}
+                            </Typography>
+                            {friend.match_reason && (
+                              <Typography variant="caption" color="text.secondary" display="block">
+                                💡 {friend.match_reason}
+                              </Typography>
+                            )}
+                            {friend.location && (
+                              <Typography variant="caption" color="text.secondary" display="block">
+                                📍 {friend.location}
+                              </Typography>
+                            )}
+                            {friend.hobbies && (
+                              <Typography variant="caption" color="text.secondary" display="block">
+                                🎨 {friend.hobbies.length > 50 ? friend.hobbies.substring(0, 50) + '...' : friend.hobbies}
+                              </Typography>
+                            )}
+                          </Box>
+                          <Button
+                            size="small"
+                            variant="contained"
+                            onClick={() => handleSendFriendRequest(friend.id)}
+                            startIcon={<PersonAddIcon />}
+                            sx={{ ml: 1, minWidth: 100 }}
+                          >
+                            Add Friend
+                          </Button>
+                        </Stack>
+                        {idx < msg.friendSuggestions.length - 1 && <Divider sx={{ mt: 1 }} />}
+                      </Box>
+                    ))}
+                    
+                    {msg.friendSuggestions.length > 1 && (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        fullWidth
+                        sx={{ mt: 1 }}
+                        onClick={() => handleSendFriendRequest(null, msg.friendSuggestions.map(f => f.id))}
+                        startIcon={<GroupAddIcon />}
+                      >
+                        Send Requests to All ({msg.friendSuggestions.length})
+                      </Button>
+                    )}
                   </Paper>
                 )}
               </ListItem>
@@ -366,21 +682,31 @@ const Chatbot = () => {
                 sx={{ fontSize: "0.7rem" }}
               />
               <Chip
-                label="Remember my name"
+                label="Suggest friends"
                 size="small"
                 variant="outlined"
                 onClick={() => {
-                  setInput("My name is [your name]");
+                  setInput("Suggest friends who like hiking");
                   handleSend();
                 }}
                 sx={{ fontSize: "0.7rem" }}
               />
               <Chip
-                label="Help me write a post"
+                label="What should I like?"
                 size="small"
                 variant="outlined"
                 onClick={() => {
-                  setInput("Help me write a post about my achievements");
+                  setInput("What should I like?");
+                  handleSend();
+                }}
+                sx={{ fontSize: "0.7rem" }}
+              />
+              <Chip
+                label="Upcoming birthdays"
+                size="small"
+                variant="outlined"
+                onClick={() => {
+                  setInput("Any birthdays coming up?");
                   handleSend();
                 }}
                 sx={{ fontSize: "0.7rem" }}
@@ -389,6 +715,31 @@ const Chatbot = () => {
           </Box>
         </Paper>
       </Zoom>
+
+      {/* Comment Dialog */}
+      <Dialog open={commentDialogOpen} onClose={() => setCommentDialogOpen(false)}>
+        <DialogTitle>Add a Comment</DialogTitle>
+        <DialogContent>
+          <MuiTextField
+            autoFocus
+            margin="dense"
+            label="Your comment"
+            fullWidth
+            variant="outlined"
+            multiline
+            rows={3}
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            placeholder="Write something nice..."
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCommentDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleSubmitComment} variant="contained" color="primary">
+            Post Comment
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };

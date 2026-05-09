@@ -14,7 +14,6 @@ import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import CommentIcon from "@mui/icons-material/Comment";
 import ShareIcon from "@mui/icons-material/Share";
 import { timeAgo } from "../../../utils/formatters";
-
 const PostCard = ({ post, onLike }) => {
   const postId = post.post_id || post.id;
   const formattedTime = post.created_at
@@ -45,9 +44,8 @@ const PostCard = ({ post, onLike }) => {
               to={`/profile/${post.user_id}`}
               style={{ textDecoration: "none" }}
             >
-             
                 <Avatar
-                  src={post.avatar_url} // ← Use the avatar URL
+                  src={post.avatar_url} 
                   sx={{
                     width: 50,
                     height: 50,
@@ -56,7 +54,6 @@ const PostCard = ({ post, onLike }) => {
                     boxShadow: "0 4px 10px rgba(33, 150, 243, .3)",
                   }}
                 >
-                  {/* Show first letter if no avatar URL */}
                   {!post.avatar_url && post.username?.charAt(0).toUpperCase()}
                 </Avatar>
               </Link>

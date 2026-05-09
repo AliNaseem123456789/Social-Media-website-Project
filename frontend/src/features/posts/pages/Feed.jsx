@@ -65,14 +65,13 @@ function Feed() {
     <Box
       sx={{
         display: "flex",
-        bgcolor: "#f4f7fe", // Softer, premium blue-grey background
+        bgcolor: "#f4f7fe", 
         minHeight: "100vh",
       }}
     >
       <Sidebar />
 
       <Container maxWidth="sm" sx={{ py: 6 }}>
-        {/* Header Section */}
         <Stack
           direction="row"
           justifyContent="space-between"
@@ -112,8 +111,6 @@ function Feed() {
             </IconButton>
           </Tooltip>
         </Stack>
-
-        {/* Error/Message Handling */}
         {message && (
           <Fade in={!!message}>
             <Alert
@@ -124,11 +121,9 @@ function Feed() {
             </Alert>
           </Fade>
         )}
-
-        {/* Posts Area */}
         <Stack spacing={1}>
           {loading
-            ? // Improved Skeletons to match PostCard height
+            ? 
               Array.from(new Array(3)).map((_, i) => (
                 <Box
                   key={i}

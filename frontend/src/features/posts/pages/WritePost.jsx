@@ -8,7 +8,7 @@ import {
   IconButton,
   CircularProgress,
   Fade,
-  Stack,
+  Stack, 
 } from "@mui/material";
 import PhotoCameraRoundedIcon from "@mui/icons-material/PhotoCameraRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
@@ -29,21 +29,17 @@ function WritePost() {
       setImagePreview(URL.createObjectURL(file));
     }
   };
-
   const removeImage = () => {
     setImageFile(null);
     setImagePreview("");
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     const user_id = localStorage.getItem("user_id");
-
     if (!user_id) {
       setMessage("You must be logged in to post");
       return;
     }
-
     setLoading(true);
     try {
       let image_url = "";
@@ -57,7 +53,6 @@ function WritePost() {
         content,
         image_url,
       });
-
       setMessage("Success! Your post is live.");
       setTitle("");
       setContent("");
@@ -69,7 +64,6 @@ function WritePost() {
       setLoading(false);
     }
   };
-
   return (
     <Box
       sx={{
@@ -95,7 +89,6 @@ function WritePost() {
             boxShadow: "0 20px 60px rgba(0,0,0,0.05)",
           }}
         >
-          {/* Header */}
           <Stack spacing={1} sx={{ mb: 4, textAlign: "center" }}>
             <Typography
               variant="h4"
@@ -148,8 +141,6 @@ function WritePost() {
                 mb: 3,
               }}
             />
-
-            {/* Image Preview Area */}
             {imagePreview && (
               <Box
                 sx={{

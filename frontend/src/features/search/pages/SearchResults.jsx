@@ -133,7 +133,6 @@ function SearchResults() {
       <Sidebar />
 
       <Container maxWidth="lg" sx={{ py: 4, ml: { sm: 0, md: 30 } }}>
-        {/* Search Header */}
         <Paper sx={{ p: 3, mb: 3, borderRadius: 3 }}>
           <Typography variant="h5" fontWeight="bold" gutterBottom>
             Search Results for "{searchQuery}"
@@ -142,8 +141,6 @@ function SearchResults() {
             Found {people.length + posts.length} results
           </Typography>
         </Paper>
-
-        {/* Tabs for People/Posts */}
         <Paper sx={{ borderRadius: 3, overflow: "hidden" }}>
           <Tabs
             value={tabValue}
@@ -166,8 +163,6 @@ function SearchResults() {
               iconPosition="start"
             />
           </Tabs>
-
-          {/* People Tab */}
           {tabValue === 0 && (
             <Box sx={{ p: 3 }}>
               {loading.people ? (
@@ -299,8 +294,6 @@ function SearchResults() {
               )}
             </Box>
           )}
-
-          {/* Posts Tab */}
           {tabValue === 1 && (
             <Box sx={{ p: 3 }}>
               {loading.posts ? (

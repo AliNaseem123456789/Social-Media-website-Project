@@ -69,9 +69,7 @@ function Navbar() {
         setResults([]);
         return;
       }
-
       try {
-        // ✅ Using searchService instead of direct axios
         const data = await searchService.searchUsers(query);
         setResults(data);
       } catch (err) {

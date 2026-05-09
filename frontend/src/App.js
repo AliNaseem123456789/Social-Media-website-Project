@@ -47,13 +47,14 @@ export default function App() {
           <Route path="/recentchat/:id" element={<RecentChats />} />
           <Route path="/videocall" element={<VideoCall />} />
           <Route path="/search" element={<SearchResults />} />
+          
           {/* <Route path="/chatbot" element={<Chatbot />} /> */}
         </Route>
 
         {/* FALLBACK - Redirect to login/landing if route doesn't exist */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <Chatbot />
+         <Chatbot />   
       <Footer />
     </Router>
   );

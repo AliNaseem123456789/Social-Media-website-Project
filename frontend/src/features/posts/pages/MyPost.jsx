@@ -8,8 +8,6 @@ function MyPosts() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const userId = localStorage.getItem("user_id");
-
-  // 1. Memoize the function using useCallback
   const fetchMyPosts = useCallback(async () => {
     if (!userId) {
       setLoading(false);
@@ -23,12 +21,10 @@ function MyPosts() {
     } finally {
       setLoading(false);
     }
-  }, [userId]); // Only recreate this function if userId changes
-
-  // 2. Safely call the memoized function in useEffect
+  }, [userId]);
   useEffect(() => {
     fetchMyPosts();
-  }, [fetchMyPosts]); // ESLint is now happy
+  }, [fetchMyPosts]);
 
   const handleLike = async (postId, e) => {
     e.preventDefault();

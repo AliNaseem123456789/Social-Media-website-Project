@@ -16,10 +16,7 @@ function SendFriendRequestButton({
     setLoading(true);
     try {
       const data = await friendService.sendRequest(currentUserId, otherUserId);
-
-      // Using a console log or custom snackbar is usually better than alert
       alert(data.message);
-
       if (onRequestSent) {
         onRequestSent(data.request);
       }
@@ -29,7 +26,6 @@ function SendFriendRequestButton({
       setLoading(false);
     }
   };
-
   return (
     <Button
       variant="contained"
