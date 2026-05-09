@@ -26,7 +26,6 @@ import CloseIcon from "@mui/icons-material/Close";
 import ForumIcon from "@mui/icons-material/Forum";
 import MemoryIcon from "@mui/icons-material/Memory";
 import FavoriteIcon from "@mui/icons-material/Favorite";
-
 import PostAddIcon from "@mui/icons-material/PostAdd";
 import DeleteIcon from "@mui/icons-material/Delete";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
@@ -35,6 +34,21 @@ import ChatIcon from "@mui/icons-material/Chat";
 import CelebrationIcon from "@mui/icons-material/Celebration";
 import axios from "axios";
 import { postService } from "../features/posts/services/postService";
+
+const API_CONFIG = {
+  dev: "http://localhost:8000",
+  prod: "https://social-media-website-assistant-production.up.railway.app",
+  environment: "prod",
+};
+const getApiUrl = () => {
+  return API_CONFIG[API_CONFIG.environment];
+};
+const apiClient = axios.create({
+  baseURL: getApiUrl(),
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
 
 const Chatbot = () => {
   const [messages, setMessages] = useState([]);
@@ -46,19 +60,16 @@ const Chatbot = () => {
   const [commentText, setCommentText] = useState("");
   const chatEndRef = useRef(null);
   const [hasWelcomed, setHasWelcomed] = useState(false);
- const [currentPath, setCurrentPath] = useState(window.location.pathname);
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
   
-  // ✅ Listen for navigation changes
+  // Listen for navigation changes
   useEffect(() => {
     const handlePathChange = () => {
       setCurrentPath(window.location.pathname);
     };
     
-    // Listen for popstate (back/forward buttons)
     window.addEventListener('popstate', handlePathChange);
     
-    // Also need to listen for React Router navigation
-    // Create a MutationObserver to detect when the page content changes
     const observer = new MutationObserver(() => {
       if (window.location.pathname !== currentPath) {
         setCurrentPath(window.location.pathname);
@@ -76,9 +87,10 @@ const Chatbot = () => {
     };
   }, [currentPath]);
   
-const userId = localStorage.getItem("user_id");
+  const userId = localStorage.getItem("user_id");
   const path = window.location.pathname;
   const isAuthPage = path === "/" || path === "/login" || path === "/signup";
+  
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -96,10 +108,10 @@ const userId = localStorage.getItem("user_id");
     }
   }, [isOpen, hasWelcomed]);
 
-  // const userId = localStorage.getItem("user_id");
-if (!userId || isAuthPage) {
-    return null; // Component doesn't render at all
+  if (!userId || isAuthPage) {
+    return null;
   }
+
   const handleCreatePost = async (content) => {
     if (!userId) {
       alert("Please log in to post!");
@@ -111,7 +123,7 @@ if (!userId || isAuthPage) {
         content: content,
         image_url: null,
       });
-      alert("✅ Post created successfully!");
+      alert("Post created successfully!");
       setMessages((prev) => [
         ...prev,
         { text: "Post published successfully!", sender: "system" },
@@ -130,7 +142,7 @@ if (!userId || isAuthPage) {
     const friendIds = allIds || [friendId];
     
     try {
-      const res = await axios.post("http://localhost:8000/api/chat", {
+      const res = await apiClient.post("/api/chat", {
         message: `send_to_all_${JSON.stringify(friendIds)}`,
         user_id: userId,
       });
@@ -148,7 +160,6 @@ if (!userId || isAuthPage) {
     }
   };
 
-  // NEW: Engagement Handlers
   const handleLike = async (postId) => {
     if (!userId) {
       alert("Please log in to like posts!");
@@ -156,7 +167,7 @@ if (!userId || isAuthPage) {
     }
     
     try {
-      const res = await axios.post("http://localhost:8000/api/chat", {
+      const res = await apiClient.post("/api/chat", {
         message: `like_post_${postId}`,
         user_id: userId,
       });
@@ -182,7 +193,7 @@ if (!userId || isAuthPage) {
     }
     
     try {
-      const res = await axios.post("http://localhost:8000/api/chat", {
+      const res = await apiClient.post("/api/chat", {
         message: `comment_post_${selectedPost.post_id}_${commentText}`,
         user_id: userId,
       });
@@ -206,13 +217,10 @@ if (!userId || isAuthPage) {
     setLoading(true);
 
     try {
-      const res = await axios.post(
-        "http://localhost:8000/api/chat",
-        {
-          message: input,
-          user_id: userId,
-        },
-      );
+      const res = await apiClient.post("/api/chat", {
+        message: input,
+        user_id: userId,
+      });
 
       setMessages((prev) => [
         ...prev,
