@@ -4,13 +4,13 @@ A full-stack social media platform with an AI-powered multi-agent assistant prov
 
 ## Key Features
 
-- 🤖 3 Specialized AI Agents (Post, Friend Suggestion, Engagement)
-- 🧠 RAG Pipeline with persistent user memory via Qdrant vector database
-- 💬 Real-time messaging with Socket.io
-- 📹 WebRTC video/audio calls with signaling
-- ⚡ GraphQL + REST hybrid API
-- 🔍 Elasticsearch-powered search
-- 🎨 Modern React + MUI frontend
+- 3 Specialized AI Agents (Post, Friend Suggestion, Engagement)
+- RAG Pipeline with persistent user memory via Qdrant vector database
+- Real-time messaging with Socket.io
+- WebRTC video/audio calls with signaling
+- GraphQL + REST hybrid API
+- Elasticsearch-powered search
+- Modern React + MUI frontend
 
 ## Tech Stack
 
