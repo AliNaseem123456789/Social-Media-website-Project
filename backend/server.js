@@ -25,8 +25,6 @@ const apolloServer = new ApolloServer({
   resolvers,
   plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
 });
-
-// 2. Start Apollo before applying middleware
 await apolloServer.start();
 
 app.use(
@@ -40,7 +38,6 @@ app.use(
 );
 app.use(express.json());
 app.use(requestLogger);
-// 3. Apply GraphQL Middleware
 app.use(
   "/api/graphql",
   expressMiddleware(apolloServer, {
@@ -54,7 +51,6 @@ app.use("/api/friends", friendsRoutes);
 app.use("/api", chatsRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/search", searchRoutes);
-// const server = createServer(app);
 const io = new Server(httpServer, {
   cors: {
     origin: [

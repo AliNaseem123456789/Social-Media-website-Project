@@ -1,4 +1,3 @@
-// controllers/authController.js
 import bcrypt from "bcrypt";
 import supabase from "../supabaseClient.js";
 import { OAuth2Client } from "google-auth-library";

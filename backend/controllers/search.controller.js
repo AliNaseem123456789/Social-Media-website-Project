@@ -1,15 +1,11 @@
 import supabase from "../supabaseClient.js";
-
 export const searchUsers = async (req, res) => {
   try {
     const q = req.query.q;
-
     if (!q || q.trim().length < 2) {
       return res.json([]);
     }
-
     console.log(`Searching users for: ${q}`);
-
     const { data, error } = await supabase
       .from("users")
       .select("id, username, email")
@@ -76,7 +72,7 @@ export const searchPosts = async (req, res) => {
     );
     res.json(postsWithCounts);
   } catch (err) {
-    console.error("💥 Post search error:", err);
+    console.error("Post search error:", err);
     res.status(500).json({
       error: "Post search failed",
       details: err.message,

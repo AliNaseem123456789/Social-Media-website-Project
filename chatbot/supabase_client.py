@@ -51,7 +51,6 @@ class SupabaseConversationStore:
         post_suggestion: Optional[str] = None
     ) -> tuple:
         """Add both user and assistant messages in one call"""
-        # Add user message
         user_msg = self.add_message(
             user_id=user_id,
             role="user",
@@ -59,9 +58,7 @@ class SupabaseConversationStore:
             intent=intent,
             intent_confidence=intent_confidence,
             sentiment_score=sentiment_score
-        )
-        
-        # Add assistant message
+        )        
         assistant_msg = self.add_message(
             user_id=user_id,
             role="assistant",
@@ -118,7 +115,6 @@ class SupabaseConversationStore:
         limit: int = 5
     ) -> List[Dict]:
         """Search conversation content (simple text search)"""
-        # Supabase full-text search
         result = self.supabase.table("conversations")\
             .select("role, content, created_at")\
             .eq("user_id", user_id)\
@@ -135,9 +131,7 @@ class SupabaseConversationStore:
         total = self.supabase.table("conversations")\
             .select("id", count="exact")\
             .eq("user_id", user_id)\
-            .execute()
-        
-        # Messages by intent
+            .execute()        
         intents = self.supabase.table("conversations")\
             .select("intent, count")\
             .eq("user_id", user_id)\
@@ -169,7 +163,6 @@ class SupabaseConversationStore:
         context_after: int = 5
     ) -> List[Dict]:
         """Get conversation around a specific message"""
-        # Get the target message first
         target = self.supabase.table("conversations")\
             .select("created_at")\
             .eq("id", message_id)\
@@ -179,9 +172,7 @@ class SupabaseConversationStore:
         if not target.data:
             return []
         
-        timestamp = target.data[0]["created_at"]
-        
-        # Get messages around it
+        timestamp = target.data[0]["created_at"]        
         result = self.supabase.table("conversations")\
             .select("*")\
             .eq("user_id", user_id)\
@@ -208,7 +199,6 @@ def get_supabase_client():
         _supabase_client = create_client(url, key)
     
     return _supabase_client
-# Singleton instance
 _conversation_store = None
 
 def get_conversation_store() -> SupabaseConversationStore:

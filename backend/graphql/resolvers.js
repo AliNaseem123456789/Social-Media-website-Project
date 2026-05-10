@@ -15,9 +15,7 @@ export const resolvers = {
         .order("created_at", { ascending: false });
 
       if (error) throw new Error(error.message);
-
       return posts.map((p) => {
-        // Avatar URL
         const profileImage = p.users?.user_profiles?.profile_image;
         let avatarUrl = null;
         if (profileImage) {
@@ -27,8 +25,6 @@ export const resolvers = {
             avatarUrl = `https://cdxeqrhdascyezirccrm.supabase.co/storage/v1/object/public/avatars/${profileImage}`;
           }
         }
-
-        // Post Image URL - ONLY ONE declaration
         let fullImageUrl = null;
         if (p.image_url) {
           console.log('Image URL exists:', p.image_url);

@@ -1,8 +1,8 @@
 import transporter from './mailer.js';
 
 const mailOptions = {
-  from: "alinaseem011235@gmail.com",
-  to: 'alinaseem21102002@gmail.com',
+  from: "xyz@gmail.com",
+  to: 'abc@gmail.com',
   subject: 'Welcome!',
   text: 'Hello, welcome to our social media site!'
 };

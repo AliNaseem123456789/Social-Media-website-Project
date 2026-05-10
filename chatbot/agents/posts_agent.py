@@ -115,17 +115,17 @@ class PostAgent:
                 self.awaiting_response = False
                 self.pending_action = None
                 return {
-                    "final_response": f"✅ Post published successfully!",
+                    "final_response": f" Post published successfully!",
                     "final_post_id": post_id,
                     "post_published": True,
                     "completed": True 
                 }
             else:
-                return {"final_response": "❌ Failed to publish post. Please try again."}
+                return {"final_response": " Failed to publish post. Please try again."}
                 
         except Exception as e:
             print(f"Error publishing: {e}")
-            return {"final_response": f"❌ Database error: {str(e)}"}
+            return {"final_response": f"Database error: {str(e)}"}
     
     async def regenerate_post(self, user_id: int, edit_request: str):
         """Regenerate post based on edit request and return button"""

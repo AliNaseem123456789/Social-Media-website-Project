@@ -1,5 +1,5 @@
 import express from "express";
-import multer from "multer"; // 👈 Need to import multer
+import multer from "multer"; 
 import { uploadPostImage } from '../controllers/upload.controller.js';
 import {
   createPost,
@@ -9,15 +9,12 @@ import {
   addComment,
   getMyPosts,
 } from "../controllers/post.controller.js";
-
 const router = express.Router();
-
-// 👇 Add multer configuration
 const storage = multer.memoryStorage();
 const upload = multer({ 
   storage: storage,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
+    fileSize: 5 * 1024 * 1024,
   },
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif|webp/;
