@@ -22,8 +22,8 @@ import redisClient from "./config/redis.config.js";
 import { getRedisStorage, deleteRedisKey, flushRedis } from "./controllers/redis.controller.js";
 // Import DataLoaders
 import { createCommentLoader, createUserLoader,createLikeStatusLoader } from "./graphql/loaders.js";
-
-const redis = new Redis("redis://localhost:6379");
+const redis = new Redis("rediss://default:gQAAAAAAAffMAAIgcDJlNzNmNzUxZDVhNDk0MGJlYjdkNDVhNjQ1MDU5Y2U4ZQ@humorous-troll-128972.upstash.io:6379");
+// const redis = new Redis("redis://localhost:6379");
 const app = express();
 const httpServer = createServer(app);
 const createContext = async ({ req }) => {
