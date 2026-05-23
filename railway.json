@@ -1,22 +1,13 @@
 {
-  "$schema": "https://railway.com/railway.schema.json",
   "services": [
     {
       "name": "backend",
       "root": "backend",
-      "buildCommand": "npm install",
-      "startCommand": "node server.js",
-      "ports": [
-        {
-          "port": 5000,
-          "protocol": "TCP"
-        }
-      ]
+      "startCommand": "node server.js"
     },
     {
       "name": "email-worker",
       "root": "email-microservice",
-      "buildCommand": "npm install",
       "startCommand": "node index.js"
     }
   ]
