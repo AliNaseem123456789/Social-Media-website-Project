@@ -1,0 +1,96 @@
+{
+  "timestamp": "2026-05-18T12:44:39.941Z",
+  "baseUrl": "http://localhost:5000",
+  "userId": "48",
+  "authenticated": true,
+  "repeatedRequestAvg": 0,
+  "endpoints": [
+    {
+      "name": "Combined Search",
+      "needsAuth": false,
+      "avg": "1985",
+      "p95": 2793,
+      "min": 1570,
+      "max": 2793,
+      "successRate": "100"
+    },
+    {
+      "name": "Search Posts",
+      "needsAuth": false,
+      "avg": "1539",
+      "p95": 1849,
+      "min": 1189,
+      "max": 1849,
+      "successRate": "100"
+    },
+    {
+      "name": "Get User Profile",
+      "needsAuth": true,
+      "avg": "682",
+      "p95": 1402,
+      "min": 540,
+      "max": 1402,
+      "successRate": "100"
+    },
+    {
+      "name": "Get All Posts (Feed)",
+      "needsAuth": false,
+      "avg": "451",
+      "p95": 601,
+      "min": 387,
+      "max": 601,
+      "successRate": "100"
+    },
+    {
+      "name": "Get Friends List",
+      "needsAuth": true,
+      "avg": "399",
+      "p95": 848,
+      "min": 294,
+      "max": 848,
+      "successRate": "100"
+    },
+    {
+      "name": "Get My Posts",
+      "needsAuth": false,
+      "avg": "343",
+      "p95": 709,
+      "min": 281,
+      "max": 709,
+      "successRate": "100"
+    },
+    {
+      "name": "Create Post",
+      "needsAuth": true,
+      "avg": "335",
+      "p95": 539,
+      "min": 284,
+      "max": 539,
+      "successRate": "100"
+    },
+    {
+      "name": "Get Recent Chats",
+      "needsAuth": true,
+      "avg": "333",
+      "p95": 696,
+      "min": 267,
+      "max": 696,
+      "successRate": "100"
+    },
+    {
+      "name": "Search Users",
+      "needsAuth": false,
+      "avg": "307",
+      "p95": 404,
+      "min": 266,
+      "max": 404,
+      "successRate": "100"
+    }
+  ],
+  "summary": {
+    "slowestEndpoint": "Combined Search",
+    "slowestTime": "1985",
+    "expectedAfterRedis": "199",
+    "expectedImprovement": "90"
+  }
+}

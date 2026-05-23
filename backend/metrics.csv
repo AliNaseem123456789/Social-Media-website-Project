@@ -1,0 +1,78 @@
+{
+  "timestamp": "2026-05-18T12:24:36.082Z",
+  "baseUrl": "http://localhost:5000",
+  "testUserId": "2",
+  "testPostId": "3",
+  "requestsPerEndpoint": 10,
+  "repeatedRequestTest": {
+    "averageMs": 329.8,
+    "allTimes": [
+      359,
+      354,
+      270,
+      271,
+      306,
+      342,
+      466,
+      270,
+      308,
+      352
+    ],
+    "conclusion": "No caching detected - all requests hit database"
+  },
+  "endpoints": [
+    {
+      "name": "Get All Posts",
+      "avg": "401",
+      "p95": 902,
+      "min": 286,
+      "max": 902,
+      "successRate": "100.0"
+    },
+    {
+      "name": "Get Full Post",
+      "avg": "341",
+      "p95": 416,
+      "min": 281,
+      "max": 416,
+      "successRate": "100.0"
+    },
+    {
+      "name": "Get My Posts",
+      "avg": "310",
+      "p95": 400,
+      "min": 272,
+      "max": 400,
+      "successRate": "100.0"
+    },
+    {
+      "name": "Create Post",
+      "avg": "315",
+      "p95": 409,
+      "min": 274,
+      "max": 409,
+      "successRate": "100.0"
+    }
+  ]
+}
+
+Name,Method,Avg(ms),p95(ms),p99(ms),Min(ms),Max(ms),Success%
+Get All Posts (Feed),GET,445,985,985,290,985,100.0
+Get My Posts,GET,309,406,406,274,406,100.0
+Create New Post,POST,356,704,704,280,704,100.0
+
+SOCIAL MEDIA API - BEFORE REDIS
+====================================
+GET /api/posts (Feed):        401ms avg (p95: 902ms)
+GET /api/posts/fullpost/3:    341ms avg (p95: 416ms)
+GET /api/posts/myposts/2:     310ms avg (p95: 400ms)
+POST /api/posts (Create):     315ms avg
+
+REPEATED REQUESTS TEST:
+10 requests to same endpoint: 330ms avg (NO CACHING!)
+Variation: 196ms (inconsistent performance)
+
+RESUME NUMBERS:
+- Slowest API: 401ms response time
+- p95 latency: 902ms (almost 1 second!)
+- Zero caching implemented

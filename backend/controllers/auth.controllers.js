@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import supabase from "../supabaseClient.js";
 import { OAuth2Client } from "google-auth-library";
+import EmailPublisher from "../services/EmailPublisher.js";
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -57,18 +58,24 @@ export const signup = async (req, res) => {
     });
   }
   try {
-    console.log("=== SIGNUP REQUEST RECEIVED ===");
-    console.log("Request body:", req.body);
-    console.log("Headers:", req.headers);
+    // console.log("=== SIGNUP REQUEST RECEIVED ===");
+    // console.log("Request body:", req.body);
+    // console.log("Headers:", req.headers);
     const hashedPassword = await bcrypt.hash(password, 10);
     const { data: user, error } = await supabase
       .from("users")
       .insert([{ username, email, password: hashedPassword }])
       .select("id, username, email, created_at")
       .single();
-
     if (error) throw error;
-
+   const verificationToken = Buffer.from(`${email}-${Date.now()}`).toString('base64');
+    
+    EmailPublisher.sendWelcomeEmail({
+      to: email,
+      name: username,
+      profileSetupLink: `http://localhost:5000/verify?token=${verificationToken}`
+    }).catch(err => console.error('Failed to queue email:', err.message));
+    
     res.json({ success: true, message: "User registered successfully", user });
   } catch (err) {
     console.error("Signup error:", err);

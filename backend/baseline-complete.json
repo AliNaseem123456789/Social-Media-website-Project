@@ -1,0 +1,78 @@
+{
+  "timestamp": "2026-05-18T12:38:07.117Z",
+  "baseUrl": "http://localhost:5000",
+  "authenticated": false,
+  "testUserId": "2",
+  "testPostId": "3",
+  "repeatedRequestTest": {
+    "avgRepeated": 430.6,
+    "times": [
+      504,
+      349,
+      297,
+      514,
+      280,
+      888,
+      550,
+      330,
+      325,
+      269
+    ]
+  },
+  "endpoints": [
+    {
+      "name": "Get All Posts (Public)",
+      "needsAuth": false,
+      "avg": "423",
+      "p95": 818,
+      "min": 297,
+      "max": 818,
+      "successRate": "100.0"
+    },
+    {
+      "name": "Get Full Post (Public)",
+      "needsAuth": false,
+      "avg": "307",
+      "p95": 399,
+      "min": 278,
+      "max": 399,
+      "successRate": "100.0"
+    },
+    {
+      "name": "Get My Posts (Public)",
+      "needsAuth": false,
+      "avg": "477",
+      "p95": 1115,
+      "min": 293,
+      "max": 1115,
+      "successRate": "100.0"
+    },
+    {
+      "name": "Search Users",
+      "needsAuth": false,
+      "avg": "354",
+      "p95": 488,
+      "min": 308,
+      "max": 488,
+      "successRate": "100.0"
+    },
+    {
+      "name": "Search Posts",
+      "needsAuth": false,
+      "avg": "1841",
+      "p95": 3178,
+      "min": 1203,
+      "max": 3178,
+      "successRate": "100.0"
+    },
+    {
+      "name": "Combined Search",
+      "needsAuth": false,
+      "avg": "2603",
+      "p95": 3212,
+      "min": 2086,
+      "max": 3212,
+      "successRate": "100.0"
+    }
+  ]
+}

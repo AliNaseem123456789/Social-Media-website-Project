@@ -1,5 +1,75 @@
 import supabase from "../supabaseClient.js";
 import { supabaseAdmin } from "../supabaseAdmin.js";
+import Redis from "ioredis";
+const redis = new Redis("redis://localhost:6379");
+
+export const getProfile = async (req, res) => {
+  const { user_id } = req.params;
+  const cacheKey = `profile:user:${user_id}`;
+  
+  try {
+    const cachedProfile = await redis.get(cacheKey);
+    
+    if (cachedProfile) {
+      return res.json(JSON.parse(cachedProfile));
+    }
+      let { data: profile, error } = await supabase
+      .from("user_profiles")
+      .select("*")
+      .eq("user_id", Number(user_id))
+      .maybeSingle();
+      
+    if (error) throw error;
+    
+    let responseData;
+    
+    if (!profile) {
+      const { data: user } = await supabase
+        .from("users")
+        .select("id, username, email, created_at")
+        .eq("id", Number(user_id))
+        .maybeSingle();
+        
+      if (!user) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
+      
+      responseData = {
+        profile: {
+          user_id: user.id,
+          username: user.username,
+          email: user.email,
+          created_at: user.created_at,
+          profile_image: null,
+          cover_image: null,
+        },
+      };
+    } else {
+      // Generate public URLs for images
+      if (profile.profile_image) {
+        const { data } = supabase.storage
+          .from("avatars")
+          .getPublicUrl(profile.profile_image);
+        profile.profile_image_url = data.publicUrl;
+      }
+      
+      if (profile.cover_image) {
+        const { data } = supabase.storage
+          .from("avatars")
+          .getPublicUrl(profile.cover_image);
+        profile.cover_image_url = data.publicUrl;
+      }
+      
+      responseData = { profile };
+    }
+    await redis.setex(cacheKey, 600, JSON.stringify(responseData));    
+    res.json(responseData);
+    
+  } catch (err) {
+    console.error("Fetch Profile Error:", err.message);
+    res.status(500).json({ error: "Failed to fetch profile" });
+  }
+};
 export const uploadFiles = async (req, res) => {
   try {
     const { user_id } = req.body;
@@ -37,53 +107,7 @@ export const uploadFiles = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
-export const getProfile = async (req, res) => {
-  const { user_id } = req.params;
-  try {
-    let { data: profile, error } = await supabase
-      .from("user_profiles")
-      .select("*")
-      .eq("user_id", Number(user_id))
-      .maybeSingle();
-    if (error) throw error;
 
-    if (!profile) {
-      const { data: user } = await supabase
-        .from("users")
-        .select("id, username, email, created_at")
-        .eq("id", Number(user_id))
-        .maybeSingle();
-      if (!user) return res.status(404).json({ error: "Profile not found" });
-      return res.json({
-        profile: {
-          user_id: user.id,
-          username: user.username,
-          email: user.email,
-          created_at: user.created_at,
-          profile_image: null,
-          cover_image: null,
-        },
-      });
-    }
-    if (profile.profile_image) {
-      const { data } = supabase.storage
-        .from("avatars")
-        .getPublicUrl(profile.profile_image);
-      profile.profile_image_url = data.publicUrl;
-    }
-
-    if (profile.cover_image) {
-      const { data } = supabase.storage
-        .from("avatars")
-        .getPublicUrl(profile.cover_image);
-      profile.cover_image_url = data.publicUrl;
-    }
-    res.json({ profile });
-  } catch (err) {
-    console.error("Fetch Profile Error:", err.message);
-    res.status(500).json({ error: "Failed to fetch profile" });
-  }
-};
 export const addProfileInfo = async (req, res) => {
   try {
     const { user_id, username, bio, gender, age, country, education, hobbies } =

@@ -1,4 +1,5 @@
 import supabase from "../supabaseClient.js";
+import EmailPublisher from "../services/EmailPublisher.js";
 const users = {};
 export const handleConnection = (io, socket) => {
   console.log(" New client connected:", socket.id);
@@ -24,6 +25,26 @@ export const handleConnection = (io, socket) => {
           message,
         });
       }
+      if (!targetSocket) {
+      // Get recipient's email from database
+      const { data: recipient, error: recipientError } = await supabase
+        .from("users")
+        .select("email, username")
+        .eq("id", to)
+        .single();
+      
+      if (!recipientError && recipient) {
+
+    EmailPublisher.sendNewMessageEmail({
+      to: recipient.email,
+      recipientName: recipient.username,
+      senderName: username,
+      messagePreview: message.substring(0, 150),
+      conversationLink: `${process.env.APP_URL}/messages/${from}_${to}`  // ← Use conversationLink
+    }).catch(err => console.error('Failed to queue email:', err.message));
+  }
+    }
+    
       socket.emit("private_message", { from, username, message });
     } catch (err) {
       console.error("Failed to save message:", err.message);
