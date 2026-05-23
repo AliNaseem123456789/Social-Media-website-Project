@@ -1,0 +1,19 @@
+services:
+  # Email Microservice (Background Worker)
+  - type: worker
+    name: email-microservice
+    runtime: node
+    rootDir: email-microservice
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: RABBITMQ_URL
+        value: amqps://tdkydmkh:b8-ff1yVOoP1GwTnTtLQvfMhCYmtQAPq@warthog.lmq.cloudamqp.com/tdkydmkh
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false  # Will set in dashboard
+      - key: SMTP_PASS
+        sync: false  # Will set in dashboard
