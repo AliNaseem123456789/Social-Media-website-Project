@@ -1,8 +1,11 @@
+// features/posts/pages/PostDetails.jsx - UPDATED
+
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import Sidebar from "../../../components/Sidebar";
 import { postService } from "../services/postService";
 import PostCard from "../components/PostCard";
+import { useAuth } from "../../auth/context/AuthContext";
 import {
   Typography,
   Avatar,
@@ -20,13 +23,17 @@ import SendRoundedIcon from "@mui/icons-material/SendRounded";
 
 function PostDetails() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  
+  // ✅ Get user from AuthContext
+  const { user: currentUser, isAuthenticated } = useAuth();
+  const userId = currentUser?.id;
+  const username = currentUser?.username;
+
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState("");
   const [posting, setPosting] = useState(false);
-
-  const userId = localStorage.getItem("user_id");
-  const isLoggedIn = !!userId;
 
   useEffect(() => {
     const loadPost = async () => {
@@ -42,15 +49,12 @@ function PostDetails() {
     if (id) loadPost();
   }, [id]);
 
+  // ✅ Add comment - NO userId parameter needed
   const handleAddComment = async () => {
-    if (!newComment.trim() || !isLoggedIn) return;
+    if (!newComment.trim() || !isAuthenticated) return;
     setPosting(true);
     try {
-      const result = await postService.addComment({
-        post_id: id,
-        comment_text: newComment,
-        user_id: Number(userId),
-      });
+      const result = await postService.addComment(id, newComment);
       setPost((prev) => ({
         ...prev,
         comments: [result.comment, ...(prev.comments || [])],
@@ -63,7 +67,22 @@ function PostDetails() {
     }
   };
 
-  if (loading)
+  // ✅ Like post - NO userId parameter needed
+  const handleLike = async (postId) => {
+    try {
+      const res = await postService.likePost(postId);
+      if (res.success) {
+        setPost((prev) => ({
+          ...prev,
+          total_likes: res.total_likes,
+        }));
+      }
+    } catch (err) {
+      console.error("Error liking post");
+    }
+  };
+
+  if (loading) {
     return (
       <Box
         sx={{
@@ -76,13 +95,15 @@ function PostDetails() {
         <CircularProgress />
       </Box>
     );
+  }
 
-  if (!post)
+  if (!post) {
     return (
       <Typography variant="h6" sx={{ textAlign: "center", mt: 10 }}>
         Post not found
       </Typography>
     );
+  }
 
   return (
     <Box
@@ -104,7 +125,9 @@ function PostDetails() {
             >
               Discussion
             </Typography>
-            <PostCard post={post} onLike={() => {}} />
+            
+            <PostCard post={post} onLike={handleLike} />
+            
             <Paper
               elevation={0}
               sx={{
@@ -118,10 +141,11 @@ function PostDetails() {
               <Typography variant="subtitle1" sx={{ mb: 3, fontWeight: 700 }}>
                 Comments ({post.comments?.length || 0})
               </Typography>
+              
+              {/* Comment Input */}
               <Box sx={{ display: "flex", gap: 2, mb: 4 }}>
                 <Avatar sx={{ width: 40, height: 40, bgcolor: "#6366f1" }}>
-                  {localStorage.getItem("username")?.charAt(0).toUpperCase() ||
-                    "U"}
+                  {username?.charAt(0).toUpperCase() || "U"}
                 </Avatar>
                 <Box sx={{ flex: 1 }}>
                   <TextField
@@ -130,13 +154,13 @@ function PostDetails() {
                     maxRows={4}
                     variant="standard"
                     placeholder={
-                      isLoggedIn
+                      isAuthenticated
                         ? "Write a thoughtful comment..."
                         : "Please login to join the chat"
                     }
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
-                    disabled={!isLoggedIn || posting}
+                    disabled={!isAuthenticated || posting}
                     InputProps={{
                       disableUnderline: true,
                       sx: { fontSize: "0.95rem" },
@@ -152,7 +176,7 @@ function PostDetails() {
                     <Button
                       variant="contained"
                       onClick={handleAddComment}
-                      disabled={!isLoggedIn || posting || !newComment.trim()}
+                      disabled={!isAuthenticated || posting || !newComment.trim()}
                       endIcon={
                         posting ? (
                           <CircularProgress size={16} color="inherit" />
@@ -173,7 +197,10 @@ function PostDetails() {
                   </Box>
                 </Box>
               </Box>
+              
               <Divider sx={{ mb: 3, opacity: 0.6 }} />
+              
+              {/* Comments List */}
               <Stack spacing={3}>
                 {post.comments?.length > 0 ? (
                   post.comments.map((c) => (

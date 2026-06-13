@@ -1,3 +1,5 @@
+// pages/FriendRequestsPage.jsx - UPDATED WITH SESSION AUTH
+
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -13,34 +15,57 @@ import {
 } from "@mui/material";
 import PersonAddRoundedIcon from "@mui/icons-material/PersonAddRounded";
 import Sidebar from "../../../components/Sidebar";
-import { friendService } from "../services/friendsService";
+import { friendService } from "../services/friendsService"; 
+import { useAuth } from "../../auth/context/AuthContext"
 function FriendRequestsPage() {
-  const currentUserId = Number(localStorage.getItem("user_id"));
+  const { user: currentUser } = useAuth();
+  const currentUserId = currentUser?.id;  
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     const fetchRequests = async () => {
       try {
-        const data = await friendService.getPendingRequests(currentUserId);
-        setRequests(data);
+        const data = await friendService.getPendingRequests();
+        setRequests(data.requests || data);
       } catch (err) {
         console.error("Error fetching requests:", err);
       } finally {
         setLoading(false);
       }
     };
-    if (currentUserId) fetchRequests();
+      if (currentUserId) {
+      fetchRequests();
+    }
   }, [currentUserId]);
   const handleRespond = async (friendship_id, status) => {
     try {
       await friendService.respondToRequest(friendship_id, status);
       setRequests((prev) =>
-        prev.filter((req) => req.friendship_id !== friendship_id),
+        prev.filter((req) => req.friendship_id !== friendship_id)
       );
     } catch (err) {
       console.error("Error responding to request:", err);
     }
   };
+
+  if (loading) {
+    return (
+      <Box sx={{ bgcolor: "#f4f7fe", minHeight: "100vh", display: "flex" }}>
+        <Sidebar />
+        <Box
+          component="main"
+          sx={{ flexGrow: 1, pt: 12, px: { xs: 2, md: 4 }, pb: 6 }}
+        >
+          <Container maxWidth="sm">
+            <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
+              <CircularProgress thickness={5} size={50} sx={{ color: "#1877f2" }} />
+            </Box>
+          </Container>
+        </Box>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ bgcolor: "#f4f7fe", minHeight: "100vh", display: "flex" }}>
       <Sidebar />
@@ -83,15 +108,7 @@ function FriendRequestsPage() {
             </Typography>
           </Box>
 
-          {loading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
-              <CircularProgress
-                thickness={5}
-                size={50}
-                sx={{ color: "#1877f2" }}
-              />
-            </Box>
-          ) : requests.length === 0 ? (
+          {requests.length === 0 ? (
             <Paper
               elevation={0}
               sx={{
@@ -143,20 +160,20 @@ function FriendRequestsPage() {
                         border: "1px solid rgba(24, 119, 242, 0.2)",
                       }}
                     >
-                      {req.users.username.charAt(0).toUpperCase()}
+                      {req.users?.username?.charAt(0).toUpperCase() || "?"}
                     </Avatar>
                     <Box>
                       <Typography
                         variant="subtitle1"
                         sx={{ fontWeight: 800, color: "#1a1a1b" }}
                       >
-                        {req.users.username}
+                        {req.users?.username || "Unknown User"}
                       </Typography>
                       <Typography
                         variant="caption"
                         sx={{ color: "text.secondary", fontWeight: 600 }}
                       >
-                        {req.users.email}
+                        {req.users?.email || ""}
                       </Typography>
                     </Box>
                   </Box>
@@ -166,9 +183,7 @@ function FriendRequestsPage() {
                       variant="contained"
                       disableElevation
                       size="small"
-                      onClick={() =>
-                        handleRespond(req.friendship_id, "accepted")
-                      }
+                      onClick={() => handleRespond(req.friendship_id, "accepted")}
                       sx={{
                         borderRadius: "12px",
                         bgcolor: "#1877f2",
@@ -184,9 +199,7 @@ function FriendRequestsPage() {
                       variant="contained"
                       disableElevation
                       size="small"
-                      onClick={() =>
-                        handleRespond(req.friendship_id, "rejected")
-                      }
+                      onClick={() => handleRespond(req.friendship_id, "rejected")}
                       sx={{
                         borderRadius: "12px",
                         bgcolor: "#f0f2f5",

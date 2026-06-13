@@ -1,24 +1,30 @@
-// graphql/resolvers.js
+// Update your resolvers
 export const resolvers = {
   Query: {
-    getFeed: async (_, { userId }, { supabase, redis, loaders }) => {
-      const cacheKey = `feed:user:${userId}`;
+    getFeed: async (_, { first = 10, after }, { supabase, redis, loaders, currentUser }) => {
+      const userId = currentUser?.user_id;
+      const validLimit = Math.min(first, 50);
       
-      console.log(`\n🔍 Getting feed for user ${userId}`);
+      if (!userId) {
+        console.log('No authenticated user for feed');
+        return {
+          edges: [],
+          pageInfo: { hasNextPage: false, endCursor: null }
+        };
+      }
       
-      // 🟢 STEP 1: Try Redis cache (using ioredis)
+      // Cache key now includes pagination
+      const cacheKey = `feed:user:${userId}:limit:${validLimit}:cursor:${after || 'start'}`;
+      console.log(`Getting feed for user ${userId} with cursor: ${after || 'start'}`);
+      
       try {
         const cached = await redis.get(cacheKey);
-        
         if (cached) {
           const parsed = JSON.parse(cached);
-          
-          // Validate cached data has username
-          if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].username) {
-            console.log('⚡⚡⚡ REDIS CACHE HIT!');
+          if (parsed.edges && parsed.edges.length > 0) {
+            console.log('REDIS CACHE HIT!');
             return parsed;
           } else {
-            console.log('⚠️ Cache corrupted, deleting...');
             await redis.del(cacheKey);
           }
         }
@@ -26,10 +32,9 @@ export const resolvers = {
         console.log('Redis error:', err.message);
       }
       
-      // 🔴 STEP 2: Cache miss - query database
-      console.log('📡 Fetching feed from database...');
+      console.log('Fetching feed from database...');
       
-      const { data: posts, error } = await supabase
+      let query = supabase
         .from("posts")
         .select(
           `
@@ -40,22 +45,46 @@ export const resolvers = {
           )
         `,
         )
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(validLimit + 1);
+      
+      if (after) {
+        const decodedCursor = Buffer.from(after, 'base64').toString();
+        query = query.lt("created_at", decodedCursor);
+      }
+      
+      const { data: posts, error } = await query;
 
       if (error) {
         console.error('Supabase error:', error);
-        return [];
+        return {
+          edges: [],
+          pageInfo: { hasNextPage: false, endCursor: null }
+        };
       }
       
       if (!posts || posts.length === 0) {
         console.log('No posts found');
-        return [];
+        return {
+          edges: [],
+          pageInfo: { hasNextPage: false, endCursor: null }
+        };
       }
       
-      console.log(`✅ Found ${posts.length} posts from database`);
+      let hasNextPage = false;
+      let resultPosts = posts;
+      let endCursor = null;
       
-      // Transform posts
-      const transformedPosts = posts.map((p) => {
+      if (posts.length > validLimit) {
+        hasNextPage = true;
+        resultPosts = posts.slice(0, validLimit);
+        const lastPost = resultPosts[resultPosts.length - 1];
+        endCursor = Buffer.from(lastPost.created_at).toString('base64');
+      }
+      
+      console.log(`Found ${resultPosts.length} posts from database, hasNextPage: ${hasNextPage}`);
+      
+      const transformedPosts = resultPosts.map((p) => {
         const profileImage = p.users?.user_profiles?.profile_image;
         let avatarUrl = null;
         if (profileImage) {
@@ -83,28 +112,29 @@ export const resolvers = {
         };
       });
       
-      // Debug: Log first post's username
-      if (transformedPosts.length > 0) {
-        console.log(`📝 First post username: ${transformedPosts[0].username}`);
-      }
+      const edges = transformedPosts.map(post => ({
+        node: post,
+        cursor: Buffer.from(post.created_at).toString('base64')
+      }));
       
-      // 🟢 STEP 3: Store in Redis (using ioredis)
-      if (transformedPosts.length > 0) {
-        const hasValidData = transformedPosts[0].username && transformedPosts[0].username !== "Unknown User";
-        
-        if (hasValidData) {
-          try {
-            await redis.setex(cacheKey, 300, JSON.stringify(transformedPosts));
-            console.log(`💾 Cached ${transformedPosts.length} posts for user ${userId}`);
-          } catch (err) {
-            console.log('Redis cache error:', err.message);
-          }
-        } else {
-          console.log('⚠️ Not caching - username missing in data');
+      const response = {
+        edges: edges,
+        pageInfo: {
+          hasNextPage: hasNextPage,
+          endCursor: endCursor
+        }
+      };
+      
+      if (edges.length > 0 && edges[0].node.username !== "Unknown User") {
+        try {
+          await redis.setex(cacheKey, 300, JSON.stringify(response));
+          console.log(`Cached ${edges.length} posts for user ${userId}`);
+        } catch (err) {
+          console.log('Redis cache error:', err.message);
         }
       }
       
-      return transformedPosts;
+      return response;
     },
   },
   

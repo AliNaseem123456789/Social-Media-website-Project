@@ -1,3 +1,5 @@
+// pages/FriendsPage.jsx - UPDATED WITH SESSION AUTH
+
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -17,10 +19,15 @@ import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import ChatBubbleRoundedIcon from "@mui/icons-material/ChatBubbleRounded";
 import AccountCircleRoundedIcon from "@mui/icons-material/AccountCircleRounded";
 import { useNavigate } from "react-router-dom";
-import { friendService } from "../services/friendsService";
+import { friendService } from "../services/friendsService"; // ✅ Make sure this is the updated service
+import { useAuth } from "../../auth/context/AuthContext";// ✅ Import useAuth
 import Sidebar from "../../../components/Sidebar";
+
 function FriendsPage() {
-  const currentUserId = localStorage.getItem("user_id");
+  // ✅ Get current user from AuthContext, NOT localStorage!
+  const { user: currentUser } = useAuth();
+  const currentUserId = currentUser?.id;
+  
   const [friends, setFriends] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
@@ -29,8 +36,11 @@ function FriendsPage() {
   useEffect(() => {
     const fetchFriends = async () => {
       try {
-        const data = await friendService.getFriends(currentUserId);
-        setFriends(data);
+        // ✅ NO userId parameter needed! Server gets from session
+        const data = await friendService.getFriends();
+        // The response structure might be { success: true, friends: [...] }
+        // Adjust based on your actual response
+        setFriends(data.friends || data);
       } catch (error) {
         console.error("Error fetching friends:", error);
       } finally {
@@ -38,14 +48,17 @@ function FriendsPage() {
       }
     };
 
-    if (currentUserId) fetchFriends();
+    // ✅ Only fetch if user is authenticated
+    if (currentUserId) {
+      fetchFriends();
+    }
   }, [currentUserId]);
 
-  const filteredFriends = friends.filter((f) =>
-    f.username.toLowerCase().includes(searchTerm.toLowerCase()),
+  const filteredFriends = friends.filter((friend) =>
+    friend.username?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (loading)
+  if (loading) {
     return (
       <Box
         sx={{
@@ -59,6 +72,7 @@ function FriendsPage() {
         <CircularProgress size={50} thickness={4} sx={{ color: "#1877f2" }} />
       </Box>
     );
+  }
 
   return (
     <Box sx={{ bgcolor: "#f4f7fe", minHeight: "100vh", pt: 12, pb: 6 }}>
@@ -159,7 +173,7 @@ function FriendsPage() {
                         fontWeight: 700,
                       }}
                     >
-                      {friend.username.charAt(0).toUpperCase()}
+                      {friend.username?.charAt(0).toUpperCase()}
                     </Avatar>
                     <Typography
                       variant="h6"
@@ -202,9 +216,8 @@ function FriendsPage() {
                         Profile
                       </Button>
                       <IconButton
-                        onClick={() =>
-                          navigate(`/chat/${currentUserId}/${friend.id}`)
-                        }
+                       onClick={() => navigate(`/chat/${friend.id}`)}
+                        
                         sx={{
                           bgcolor: alpha("#1877f2", 0.1),
                           color: "#1877f2",

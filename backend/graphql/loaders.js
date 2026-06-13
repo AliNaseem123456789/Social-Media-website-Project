@@ -1,13 +1,8 @@
-// graphql/loaders.js
 import DataLoader from 'dataloader';
 import supabase from '../supabaseClient.js';
-
-// DataLoader for comments (batches by post_id)
 export const createCommentLoader = () => {
   return new DataLoader(async (postIds) => {
-    console.log(`📦 Batching ${postIds.length} post IDs for comments`);
-    
-    // ONE query for ALL posts' comments
+    console.log(`Batching ${postIds.length} post IDs for comments`);    
     const { data: comments, error } = await supabase
       .from("comments")
       .select("*, users(username)")

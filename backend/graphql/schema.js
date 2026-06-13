@@ -1,13 +1,17 @@
+// Update your typeDefs
 export const typeDefs = `#graphql
   type User {
     username: String
-    avatar_url: String   # optional, but good to have
+    avatar_url: String
   }
+  
   type Comment {
     comment_id: ID
     comment_text: String
     users: User
+    created_at: String
   }
+  
   type Post {
     post_id: ID
     user_id: ID      
@@ -17,11 +21,25 @@ export const typeDefs = `#graphql
     username: String
     created_at: String 
     comments: [Comment]
-    avatar_url: String   # <-- add this line
+    avatar_url: String
+  }
+  
+  type PostEdge {
+    node: Post!
+    cursor: String!
+  }
+  
+  type PageInfo {
+    hasNextPage: Boolean!
+    endCursor: String
+  }
+  
+  type FeedResult {
+    edges: [PostEdge!]!
+    pageInfo: PageInfo!
   }
 
   type Query {
-    getFeed(userId: ID!): [Post]
+    getFeed(first: Int, after: String): FeedResult!
   }
-    
 `;

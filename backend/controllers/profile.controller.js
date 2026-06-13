@@ -1,7 +1,7 @@
 import supabase from "../supabaseClient.js";
 import { supabaseAdmin } from "../supabaseAdmin.js";
 import Redis from "ioredis";
-const redis = new Redis("redis://localhost:6379");
+const redis = new Redis("rediss://default:gQAAAAAAAffMAAIgcDJlNzNmNzUxZDVhNDk0MGJlYjdkNDVhNjQ1MDU5Y2U4ZQ@humorous-troll-128972.upstash.io:6379");
 
 export const getProfile = async (req, res) => {
   const { user_id } = req.params;
@@ -72,26 +72,35 @@ export const getProfile = async (req, res) => {
 };
 export const uploadFiles = async (req, res) => {
   try {
-    const { user_id } = req.body;
+    const userId = req.session?.userId;    
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Not authenticated" });
+    }
+    
     const profileFile = req.files["profileImage"]?.[0];
     const coverFile = req.files["coverImage"]?.[0];
     let profileUrl = null;
     let coverUrl = null;
+    
     if (profileFile) {
       const { data, error } = await supabase.storage
         .from("avatars")
-        .upload(`profile_${user_id}_${Date.now()}`, profileFile.buffer, {
+        .upload(`profile_${userId}_${Date.now()}`, profileFile.buffer, {
           contentType: profileFile.mimetype,
           upsert: true,
         });
       if (error) throw error;
       profileUrl = data.path;
     }
+    
+    if (coverFile) {
+    }
+    
     const { data, error: dbError } = await supabase
       .from("user_profiles")
       .upsert(
         {
-          user_id: Number(user_id),
+          user_id: Number(userId),
           profile_image: profileUrl || undefined,
           cover_image: coverUrl || undefined,
         },
@@ -101,6 +110,10 @@ export const uploadFiles = async (req, res) => {
       .single();
 
     if (dbError) throw dbError;
+    
+    // Clear cache for this profile
+    await redis.del(`profile:user:${userId}`);
+    
     res.json({ success: true, profile: data });
   } catch (err) {
     console.error(err);
@@ -110,16 +123,22 @@ export const uploadFiles = async (req, res) => {
 
 export const addProfileInfo = async (req, res) => {
   try {
-    const { user_id, username, bio, gender, age, country, education, hobbies } =
-      req.body;
+    const userId = req.session?.userId;
+    
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Not authenticated" });
+    }
+    
+    const { username, bio, gender, age, country, education, hobbies } = req.body;
     const profileFile = req.files?.["profileImage"]?.[0];
     const coverFile = req.files?.["coverImage"]?.[0];
-    if (!user_id) return res.status(400).json({ error: "User ID is required" });
+    
     let profilePath = undefined;
     let coverPath = undefined;
+    
     if (profileFile) {
       const ext = profileFile.mimetype.split("/")[1] || "jpg";
-      const fileName = `profile_${user_id}.${ext}`;
+      const fileName = `profile_${userId}.${ext}`;
       const { data: pData, error: pErr } = await supabaseAdmin.storage
         .from("avatars")
         .upload(fileName, profileFile.buffer, {
@@ -129,9 +148,10 @@ export const addProfileInfo = async (req, res) => {
       if (pErr) throw pErr;
       profilePath = pData.path;
     }
+    
     if (coverFile) {
       const ext = coverFile.mimetype.split("/")[1] || "jpg";
-      const fileName = `cover_${user_id}.${ext}`;
+      const fileName = `cover_${userId}.${ext}`;
       const { data: cData, error: cErr } = await supabaseAdmin.storage
         .from("avatars")
         .upload(fileName, coverFile.buffer, {
@@ -141,8 +161,9 @@ export const addProfileInfo = async (req, res) => {
       if (cErr) throw cErr;
       coverPath = cData.path;
     }
+    
     const updateData = {
-      user_id: Number(user_id),
+      user_id: Number(userId),
       username,
       bio,
       gender,
@@ -154,12 +175,18 @@ export const addProfileInfo = async (req, res) => {
     };
     if (profilePath) updateData.profile_image = profilePath;
     if (coverPath) updateData.cover_image = coverPath;
+    
     const { data, error } = await supabaseAdmin
       .from("user_profiles")
       .upsert(updateData, { onConflict: "user_id" })
       .select()
       .single();
+      
     if (error) throw error;
+    
+    // Clear cache for this profile
+    await redis.del(`profile:user:${userId}`);
+    
     res.json({ success: true, profile: data });
   } catch (err) {
     console.error("Backend Error:", err.message);

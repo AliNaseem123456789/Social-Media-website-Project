@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import GoogleButton from "../components/GoogleButton";
-import { authService } from "../services/authService";
+// import { authService } from "../services/authService";
+import { useAuth } from "../context/AuthContext";
 import {
   Dialog,
   DialogTitle,
@@ -12,6 +13,7 @@ import {
   Box,
 } from "@mui/material";
 function SignupPopup({ open, handleClose, openLogin }) {
+  const { signup } = useAuth(); 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,9 +24,10 @@ function SignupPopup({ open, handleClose, openLogin }) {
     setLoading(true);
     setMessage("");
     try {
-      const data = await authService.signup(username, email, password);
-      setMessage(data.message);
-      if (data.success) {
+      const result = await signup(username, email, password);
+      // const data = await authService.signup(username, email, password);
+      setMessage(result.message);
+      if (result.success) {
         setTimeout(() => handleClose(), 1500);
       }
     } catch (err) {

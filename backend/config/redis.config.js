@@ -147,6 +147,39 @@ async set(key, value, ttlSeconds = 300) {
             return false;
         }
     }
+    async saveSession(sessionId, userData, ttlSeconds = 86400) {  // 24 hours default
+        const key = `session:${sessionId}`;
+        return await this.set(key, userData, ttlSeconds);
+    }
+
+    // Get session data
+    async getSession(sessionId) {
+        const key = `session:${sessionId}`;
+        return await this.get(key);
+    }
+
+    // Delete session
+    async deleteSession(sessionId) {
+        const key = `session:${sessionId}`;
+        return await this.del(key);
+    }
+
+    // Check if session exists
+    async sessionExists(sessionId) {
+        const key = `session:${sessionId}`;
+        const session = await this.get(key);
+        return session !== null;
+    }
+
+    // Update session TTL (extend expiry on activity)
+    async touchSession(sessionId, ttlSeconds = 86400) {
+        // With Upstash REST API, we need to re-set with same data
+        const session = await this.getSession(sessionId);
+        if (session) {
+            return await this.saveSession(sessionId, session, ttlSeconds);
+        }
+        return false;
+    }
 
     async getStats() {
         return { hits: 0, misses: 0, hitRate: 0 };

@@ -16,6 +16,8 @@ import { styled, useTheme } from "@mui/material/styles";
 import ChatIcon from "@mui/icons-material/Chat";
 import { friendService } from "../services/friendsService";
 import { chatService } from "../services/chatService";
+import { useAuth } from "../../auth/context/AuthContext";
+
 const StickyWrapper = styled(Box)(({ theme }) => ({
   position: "sticky",
   top: 80,
@@ -34,10 +36,10 @@ function RecentChats() {
   const [friends, setFriends] = useState([]);
   const [recentChats, setRecentChats] = useState([]);
   const [open, setOpen] = useState(false);
-
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  const currentUserId = localStorage.getItem("user_id");
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));  
+  const { user: currentUser } = useAuth();
+  const currentUserId = currentUser?.id;
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -45,10 +47,10 @@ function RecentChats() {
     const loadData = async () => {
       try {
         const [friendsData, chatsData] = await Promise.all([
-          friendService.getFriends(currentUserId),
-          chatService.getRecentChats(currentUserId),
+          friendService.getFriends(),        
+          chatService.getRecentChats(),     
         ]);
-        setFriends(friendsData);
+        setFriends(friendsData.friends || friendsData);
         setRecentChats(chatsData);
       } catch (error) {
         console.error("Error loading chat/friend data:", error);
@@ -82,7 +84,7 @@ function RecentChats() {
               <React.Fragment key={item.id}>
                 <ListItemButton
                   component={Link}
-                  to={`/chat/${currentUserId}/${item.id}`}
+                  to={`/chat/${item.id}`}  // ← Only item.id (other user)
                   sx={{
                     "&:hover": { backgroundColor: "rgba(255,255,255,0.1)" },
                   }}
@@ -109,12 +111,14 @@ function RecentChats() {
       </Paper>
     </>
   );
+  
   const content = (
     <Box>
       {renderListSection("Recent Chats", recentChats, true)}
       {renderListSection("Friends", friends)}
     </Box>
   );
+  
   return (
     <>
       {isMobile ? (
@@ -150,4 +154,5 @@ function RecentChats() {
     </>
   );
 }
+
 export default RecentChats;

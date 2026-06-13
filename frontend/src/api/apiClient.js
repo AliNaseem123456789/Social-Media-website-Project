@@ -2,6 +2,7 @@ import axios from "axios";
 
 const apiClient = axios.create({
   baseURL: "http://localhost:5000/api",
+  // baseURL: "https://social-media-website-project-c6la.onrender.com/api",
   // baseURL: "https://social-media-website-project.onrender.com/api",
   withCredentials: true,
   headers: {

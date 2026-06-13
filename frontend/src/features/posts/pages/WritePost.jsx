@@ -1,4 +1,7 @@
+// features/posts/pages/WritePost.jsx - UPDATED
+
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   TextField,
@@ -8,19 +11,31 @@ import {
   IconButton,
   CircularProgress,
   Fade,
-  Stack, 
+  Stack,
+  Alert,
 } from "@mui/material";
 import PhotoCameraRoundedIcon from "@mui/icons-material/PhotoCameraRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { postService } from "../services/postService";
+import { useAuth } from "../../auth/context/AuthContext";
 
 function WritePost() {
-  const [title, setTitle] = useState("");
+  const navigate = useNavigate();
+  
+  // ✅ Get user from AuthContext
+  const { user: currentUser, isAuthenticated } = useAuth();
+  
   const [content, setContent] = useState("");
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Redirect if not authenticated
+  if (!isAuthenticated) {
+    navigate("/login");
+    return null;
+  }
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -29,41 +44,55 @@ function WritePost() {
       setImagePreview(URL.createObjectURL(file));
     }
   };
+
   const removeImage = () => {
     setImageFile(null);
     setImagePreview("");
   };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const user_id = localStorage.getItem("user_id");
-    if (!user_id) {
-      setMessage("You must be logged in to post");
+    
+    if (!content.trim() && !imageFile) {
+      setMessage("Please add some content or an image");
       return;
     }
+    
     setLoading(true);
+    setMessage("");
+    
     try {
       let image_url = "";
       if (imageFile) {
         image_url = await postService.uploadImage(imageFile);
       }
-      // eslint-disable-next-line
+      
+      // ✅ NO userId parameter! Server gets from session
       const res = await postService.createPost({
-        user_id,
-        title,
-        content,
-        image_url,
+        content: content,
+        image_url: image_url,
       });
-      setMessage("Success! Your post is live.");
-      setTitle("");
-      setContent("");
-      setImageFile(null);
-      setImagePreview("");
+      
+      if (res.success) {
+        setMessage("Success! Your post is live.");
+        setContent("");
+        setImageFile(null);
+        setImagePreview("");
+        
+        // Redirect to home after 2 seconds
+        setTimeout(() => {
+          navigate("/home");
+        }, 1500);
+      } else {
+        setMessage(res.message || "Something went wrong");
+      }
     } catch (err) {
       setMessage(err.response?.data?.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
   };
+
   return (
     <Box
       sx={{
@@ -107,22 +136,9 @@ function WritePost() {
 
           <Box component="form" onSubmit={handleSubmit} sx={{ width: "100%" }}>
             <TextField
-              placeholder="Give your post a title..."
-              variant="standard"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              fullWidth
-              InputProps={{
-                disableUnderline: true,
-                sx: { fontSize: "1.4rem", fontWeight: 700, px: 1 },
-              }}
-              sx={{ mb: 3 }}
-            />
-
-            <TextField
-              placeholder="Tell your story..."
+              placeholder="What's happening?"
               multiline
-              rows={5}
+              rows={4}
               value={content}
               onChange={(e) => setContent(e.target.value)}
               fullWidth
@@ -141,6 +157,7 @@ function WritePost() {
                 mb: 3,
               }}
             />
+            
             {imagePreview && (
               <Box
                 sx={{
@@ -213,7 +230,7 @@ function WritePost() {
               <Button
                 type="submit"
                 variant="contained"
-                disabled={loading || !content.trim()}
+                disabled={loading || (!content.trim() && !imageFile)}
                 sx={{
                   borderRadius: "12px",
                   px: 4,
@@ -237,22 +254,12 @@ function WritePost() {
 
             {message && (
               <Fade in={!!message}>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    mt: 3,
-                    textAlign: "center",
-                    p: 1.5,
-                    borderRadius: "12px",
-                    bgcolor: message.includes("Success")
-                      ? "#e7f3ff"
-                      : "#ffebe8",
-                    color: message.includes("Success") ? "#1877f2" : "#f02849",
-                    fontWeight: 700,
-                  }}
+                <Alert
+                  severity={message.includes("Success") ? "success" : "error"}
+                  sx={{ mt: 3, borderRadius: "12px" }}
                 >
                   {message}
-                </Typography>
+                </Alert>
               </Fade>
             )}
           </Box>

@@ -1,36 +1,45 @@
+// services/authService.js
+
 import apiClient from "../../../api/apiClient";
+
 export const authService = {
+  // Login - NO localStorage!
   login: async (email, password) => {
     const res = await apiClient.post("/login", { email, password });
-    if (res.data.success) {
-      localStorage.setItem("user_id", res.data.user_id);
-      localStorage.setItem("username", res.data.username);
-    }
+    // ✅ NO localStorage.setItem!
     return res.data;
   },
+
+  // Google Login - NO localStorage!
   googleLogin: async (credential) => {
     const res = await apiClient.post("/google", { token: credential });
-    if (res.data.success) {
-      localStorage.setItem("user_id", res.data.user_id);
-      localStorage.setItem("username", res.data.username);
-    }
+    // ✅ NO localStorage.setItem!
     return res.data;
   },
-  logout: () => {
-    localStorage.removeItem("user_id");
-    localStorage.removeItem("username");
+
+  // Logout
+  logout: async () => {
+    const res = await apiClient.post("/logout");
+    // ✅ NO localStorage.removeItem!
+    return res.data;
   },
-  getCurrentUser: () => {
-    return {
-      userId: localStorage.getItem("user_id"),
-      username: localStorage.getItem("username"),
-    };
+
+  // Get current user from session
+  getCurrentUser: async () => {
+    try {
+      const res = await apiClient.get("/me");
+      return res.data;
+    } catch (error) {
+      return { success: false, user: null };
+    }
   },
+
+  // Signup
   signup: async (username, email, password) => {
     const passwordRegex = /^[A-Za-z]\w{7,14}$/;
     if (!passwordRegex.test(password)) {
       throw new Error(
-        "Password must be 8–15 chars, start with a letter, only letters/numbers/_",
+        "Password must be 8–15 chars, start with a letter, only letters/numbers/_"
       );
     }
     const res = await apiClient.post("/signup", { username, email, password });

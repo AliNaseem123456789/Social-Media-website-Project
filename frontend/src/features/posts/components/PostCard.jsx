@@ -14,11 +14,17 @@ import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import CommentIcon from "@mui/icons-material/Comment";
 import ShareIcon from "@mui/icons-material/Share";
 import { timeAgo } from "../../../utils/formatters";
+
 const PostCard = ({ post, onLike }) => {
   const postId = post.post_id || post.id;
   const formattedTime = post.created_at
     ? timeAgo(new Date(post.created_at))
     : "Just now";
+  
+  // Check if current user has liked this post
+  // If your backend doesn't send 'liked' field yet, we'll use a fallback
+  const isLiked = post.liked === true || post.user_has_liked === true;
+  
   const cardStyle = {
     marginBottom: 4,
     borderRadius: "24px",
@@ -30,6 +36,7 @@ const PostCard = ({ post, onLike }) => {
       transform: "translateY(-4px)",
     },
   };
+  
   return (
     <Card sx={cardStyle}>
       <CardContent sx={{ p: "24px !important" }}>
@@ -44,19 +51,18 @@ const PostCard = ({ post, onLike }) => {
               to={`/profile/${post.user_id}`}
               style={{ textDecoration: "none" }}
             >
-                <Avatar
-                  src={post.avatar_url} 
-                  sx={{
-                    width: 50,
-                    height: 50,
-                    background:
-                      "linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)",
-                    boxShadow: "0 4px 10px rgba(33, 150, 243, .3)",
-                  }}
-                >
-                  {!post.avatar_url && post.username?.charAt(0).toUpperCase()}
-                </Avatar>
-              </Link>
+              <Avatar
+                src={post.avatar_url} 
+                sx={{
+                  width: 50,
+                  height: 50,
+                  background: "linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)",
+                  boxShadow: "0 4px 10px rgba(33, 150, 243, .3)",
+                }}
+              >
+                {!post.avatar_url && post.username?.charAt(0).toUpperCase()}
+              </Avatar>
+            </Link>
           
             <Box>
               <Typography
@@ -71,6 +77,7 @@ const PostCard = ({ post, onLike }) => {
             </Box>
           </Stack>
         </Stack>
+        
         <Link
           to={`/fullpost/${postId}`}
           style={{ textDecoration: "none", color: "inherit" }}
@@ -108,6 +115,7 @@ const PostCard = ({ post, onLike }) => {
             </Box>
           )}
         </Link>
+        
         <Stack
           direction="row"
           spacing={1}
@@ -119,7 +127,8 @@ const PostCard = ({ post, onLike }) => {
               onClick={(e) => onLike(postId, e)}
               sx={{ color: "#ff4757" }}
             >
-              {Number(post.total_likes) > 0 ? (
+              {/* FIXED: Use 'isLiked' instead of total_likes count */}
+              {isLiked ? (
                 <FavoriteIcon />
               ) : (
                 <FavoriteBorderIcon />
@@ -129,6 +138,7 @@ const PostCard = ({ post, onLike }) => {
               {post.total_likes || 0}
             </Typography>
           </Stack>
+          
           <Stack direction="row" alignItems="center" spacing={0.5}>
             <IconButton color="primary">
               <CommentIcon sx={{ color: "#70a1ff" }} />
@@ -137,6 +147,7 @@ const PostCard = ({ post, onLike }) => {
               {post.comments?.length || 0}
             </Typography>
           </Stack>
+          
           <Box sx={{ flexGrow: 1 }} />
           <IconButton>
             <ShareIcon fontSize="small" sx={{ color: "#a4b0be" }} />
@@ -146,4 +157,5 @@ const PostCard = ({ post, onLike }) => {
     </Card>
   );
 };
+
 export default PostCard;

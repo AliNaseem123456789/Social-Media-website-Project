@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import GoogleButton from "../components/GoogleButton";
-import { authService } from "../services/authService";
+// import { authService } from "../services/authService";
+import { useAuth } from "../context/AuthContext";
 import {
   Dialog,
   DialogTitle,
@@ -15,6 +16,7 @@ import {
 
 function LoginPopup({ open, handleClose, openSignup }) {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -24,11 +26,11 @@ function LoginPopup({ open, handleClose, openSignup }) {
     e.preventDefault();
     setLoading(true);
     try {
-      const data = await authService.login(email, password);
+      // const data = await authService.login(email, password);
+       const result = await login(email, password);
+      setMessage(result.message);
 
-      setMessage(data.message);
-
-      if (data.success) {
+      if (result.success) {
         handleClose();
         navigate("/home");
       }

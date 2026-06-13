@@ -1,7 +1,10 @@
+// pages/Profile.jsx - UPDATED
+
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom"; // Fixed import
+import { useParams, useNavigate } from "react-router-dom";
 import { Box, CircularProgress, Container, Grid, Stack } from "@mui/material";
 import { profileService } from "../services/profileService";
+import { useAuth } from "../../auth/context/AuthContext";
 import ProfileHero from "../components/ProfileHero";
 import ProfileSidebar from "../components/ProfileSidebar";
 import ProfileStats from "../components/ProfileStats";
@@ -10,7 +13,7 @@ import AddProfileInfoForm from "./AddProfileInfoForm";
 
 function Profile() {
   const { id: userId } = useParams();
-  const currentUserId = Number(localStorage.getItem("user_id"));
+  const { user: currentUser } = useAuth();
   const navigate = useNavigate();
 
   const [profile, setProfile] = useState(null);
@@ -18,6 +21,8 @@ function Profile() {
   const [editOpen, setEditOpen] = useState(false);
   const [isFriend, setIsFriend] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
+
+  const currentUserId = currentUser?.id; // ✅ From AuthContext
 
   const fetchProfileData = async () => {
     try {
@@ -27,7 +32,7 @@ function Profile() {
 
       // Check friendship status if viewing someone else's profile
       if (Number(userId) !== currentUserId) {
-        const friends = await profileService.checkFriendship(currentUserId);
+        const friends = await profileService.checkFriendship();
         setIsFriend(friends.some((f) => f.id === Number(userId)));
       }
     } catch (err) {
@@ -38,24 +43,28 @@ function Profile() {
   };
 
   useEffect(() => {
-    fetchProfileData();
+    if (currentUserId) {
+      fetchProfileData();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
+  }, [userId, currentUserId]);
 
   const handleSendRequest = async () => {
     try {
-      await profileService.sendFriendRequest(currentUserId, userId);
+      // ✅ NO requesterId needed!
+      await profileService.sendFriendRequest(userId);
       setRequestSent(true);
     } catch (err) {
       console.error("Error sending friend request:", err);
     }
   };
 
-  const handleChat = () => {
-    navigate(`/chat/${currentUserId}/${userId}`);
-  };
+const handleChat = () => {
+  // ✅ CORRECT - only pass the OTHER user's ID
+  navigate(`/chat/${userId}`);  // userId is the profile being viewed
+};
 
-  if (loading)
+  if (loading) {
     return (
       <Box
         sx={{
@@ -68,11 +77,11 @@ function Profile() {
         <CircularProgress thickness={5} size={50} sx={{ color: "#1877f2" }} />
       </Box>
     );
+  }
 
   return (
     <Box sx={{ display: "flex", bgcolor: "#f4f7fe", minHeight: "100vh" }}>
       <Box component="main" sx={{ flexGrow: 1, pt: "64px" }}>
-        {/* We pass all the logic as props to the Hero component */}
         <ProfileHero
           profile={profile}
           isOwn={Number(userId) === currentUserId}

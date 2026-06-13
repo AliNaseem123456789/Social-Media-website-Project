@@ -1,16 +1,21 @@
+// ProtectedRoute.jsx - COMPLETE REWRITE
+
 import React from "react";
 import { Navigate, Outlet } from "react-router-dom";
-import { authService } from "../services/authService";
+import { useAuth } from "../context/AuthContext";  // ✅ CHANGE: Use useAuth
 
 const ProtectedRoute = () => {
-  const { userId } = authService.getCurrentUser();
+  const { isAuthenticated, loading } = useAuth();  // ✅ CHANGE: Get from context
 
-  // If no user_id is found in localStorage, redirect to landing page
-  if (!userId) {
+  if (loading) {
+    return <div>Loading...</div>; // Or a spinner
+  }
+
+  // ✅ CHANGE: Use isAuthenticated from context, not localStorage
+  if (!isAuthenticated) {
     return <Navigate to="/" replace />;
   }
 
-  // If user exists, render the "Outlet" (the child components)
   return <Outlet />;
 };
 

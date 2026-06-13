@@ -43,15 +43,13 @@ export default function App() {
           <Route path="/fullpost/:id" element={<PostDetails />} />
           <Route path="/myposts/:id" element={<MyPost />} />
           <Route path="/friendspage/:id" element={<FriendsPage />} />
-          <Route path="/chat/:user1/:user2" element={<ChatPage />} />
+          <Route path="/chat/:otherUserId" element={<ChatPage />} />
           <Route path="/recentchat/:id" element={<RecentChats />} />
           <Route path="/videocall" element={<VideoCall />} />
           <Route path="/search" element={<SearchResults />} />
           
           {/* <Route path="/chatbot" element={<Chatbot />} /> */}
         </Route>
-
-        {/* FALLBACK - Redirect to login/landing if route doesn't exist */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
          <Chatbot />   

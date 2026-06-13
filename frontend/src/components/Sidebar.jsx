@@ -1,3 +1,5 @@
+// components/Sidebar.jsx - UPDATED WITH SESSION AUTH
+
 import React, { useState } from "react";
 import {
   Drawer,
@@ -23,17 +25,18 @@ import FavoriteRoundedIcon from "@mui/icons-material/FavoriteRounded";
 import GroupRoundedIcon from "@mui/icons-material/GroupRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import AccountCircleRoundedIcon from "@mui/icons-material/AccountCircleRounded";
+import { useAuth } from "../features/auth/context/AuthContext";
+import apiClient from "../api/apiClient";
 
-// RESTORED: Your specific fixed positioning logic
 const SidebarWrapper = styled(Box)(({ theme }) => ({
   [theme.breakpoints.up("md")]: {
     width: 250,
     flexShrink: 0,
     position: "fixed",
-    right: 0, // Keeps it on the right
-    top: 64, // Below the Navbar
+    right: 0,
+    top: 64,
     height: "calc(100% - 64px)",
-    backgroundColor: "white", // Changed from #111 to clean white
+    backgroundColor: "white",
     color: "#1a1a1b",
     borderLeft: "1px solid rgba(0,0,0,0.08)",
     zIndex: 1000,
@@ -46,35 +49,47 @@ function Sidebar() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [open, setOpen] = useState(false);
-  const userId = localStorage.getItem("user_id");
+  
+  // ✅ Get user from AuthContext, NOT localStorage!
+  const { user, logout } = useAuth();
+  const userId = user?.id;  // ✅ From session, not localStorage
 
-  const handleLogout = () => {
-    localStorage.removeItem("user_id");
-    localStorage.removeItem("username");
-    navigate("/");
+  // ✅ Updated logout using session auth
+  const handleLogout = async () => {
+    try {
+      await apiClient.post("/logout");
+      await logout(); // Clear AuthContext state
+      navigate("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+      navigate("/");
+    }
   };
+
+  // ✅ Only show sidebar if user is logged in
+  if (!userId) return null;
 
   const menuItems = [
     { text: "Feed", icon: <HomeRoundedIcon />, path: "/home" },
     {
       text: "Profile",
       icon: <AccountCircleRoundedIcon />,
-      path: `/profile/${userId}`,
+      path: `/profile/${userId}`,  // ✅ Uses userId from session
     },
     {
       text: "My Posts",
       icon: <ArticleRoundedIcon />,
-      path: `/myposts/${userId}`,
+      path: `/myposts/${userId}`,  // ✅ Uses userId from session
     },
     {
       text: "Friend Requests",
       icon: <FavoriteRoundedIcon />,
-      path: `/friendrequests/${userId}`,
+      path: `/friendrequests/${userId}`,  // ✅ Uses userId from session
     },
     {
       text: "Friends",
       icon: <GroupRoundedIcon />,
-      path: `/friendspage/${userId}`,
+      path: `/friendspage/${userId}`,  // ✅ Uses userId from session
     },
     { text: "Logout", icon: <LogoutRoundedIcon />, action: handleLogout },
   ];
@@ -95,18 +110,25 @@ function Sidebar() {
         >
           Menu
         </Typography>
+        {/* ✅ Show logged-in user info */}
+        <Typography
+          variant="body2"
+          sx={{ mt: 1, fontWeight: 600, color: "#1877f2" }}
+        >
+          {user?.username}
+        </Typography>
       </Box>
 
       <List sx={{ px: 2 }}>
         {menuItems.map((item, index) => {
-          const isActive = location.pathname === item.path;
+          const isActive = item.path ? location.pathname === item.path : false;
           return (
             <ListItem key={index} disablePadding sx={{ mb: 0.5 }}>
               <ListItemButton
                 onClick={() => {
                   if (item.path) navigate(item.path);
                   else if (item.action) item.action();
-                  setOpen(false);
+                  if (isMobile) setOpen(false);
                 }}
                 sx={{
                   borderRadius: "12px",

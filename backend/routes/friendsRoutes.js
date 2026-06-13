@@ -5,9 +5,12 @@ import {
   respondToRequest,
   getFriendsList,
 } from "../controllers/friends.controller.js";
+import { requireAuth } from "../middleware/session.middleware.js";
+
 const router = express.Router();
-router.post("/request", sendFriendRequest);
-router.get("/pending/:userId", getPendingRequests);
-router.post("/respond", respondToRequest);
-router.get("/:userId", getFriendsList);
+router.post("/request", requireAuth, sendFriendRequest);
+router.get("/pending", requireAuth, getPendingRequests);
+router.post("/respond", requireAuth, respondToRequest);
+router.get("/", requireAuth, getFriendsList);
+
 export default router;

@@ -1,15 +1,19 @@
 import React from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
-import { authService } from "../services/authService";
+// import { authService } from "../services/authService";
+import { useAuth } from "../context/AuthContext";
+
 const GoogleButton = () => {
   const navigate = useNavigate();
+  const { googleLogin } = useAuth(); 
 
   const handleSuccess = async (credentialResponse) => {
     try {
-      const data = await authService.googleLogin(credentialResponse.credential);
+       const result = await googleLogin(credentialResponse.credential);
+      // const data = await authService.googleLogin(credentialResponse.credential);
 
-      if (data.success) {
+      if (result.success) {
         navigate("/home");
       }
     } catch (err) {

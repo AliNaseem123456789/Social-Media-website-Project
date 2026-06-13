@@ -1,4 +1,7 @@
+// features/profile/pages/AddProfileInfoForm.jsx - UPDATED WITH SESSION AUTH
+
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Modal,
   Box,
@@ -6,9 +9,12 @@ import {
   TextField,
   Button,
   Stack,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { profileService } from "../services/profileService";
+import { useAuth } from "../../auth/context/AuthContext";
 
 const style = {
   position: "absolute",
@@ -25,7 +31,15 @@ const style = {
   border: "1px solid #ccc",
 };
 
-function AddProfileInfoForm({ open, handleClose, userId, onSaved }) {
+function AddProfileInfoForm({ open, handleClose, userId: propUserId, onSaved }) {
+  const navigate = useNavigate();
+  
+  // ✅ Get current user from AuthContext
+  const { user: currentUser, isAuthenticated } = useAuth();
+  
+  // ✅ Use propUserId if provided (for viewing other profiles), otherwise use current user
+  const userId = propUserId || currentUser?.id;
+  
   const [formData, setFormData] = useState({
     username: "",
     bio: "",
@@ -38,6 +52,15 @@ function AddProfileInfoForm({ open, handleClose, userId, onSaved }) {
   const [profileImageFile, setProfileImageFile] = useState(null);
   const [coverImageFile, setCoverImageFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated && open) {
+      navigate("/login");
+    }
+  }, [isAuthenticated, open, navigate]);
+
   useEffect(() => {
     if (open && userId) {
       const loadProfile = async () => {
@@ -76,28 +99,43 @@ function AddProfileInfoForm({ open, handleClose, userId, onSaved }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
+    
     try {
       const data = new FormData();
-      data.append("user_id", userId);
-
+      // ✅ NO user_id needed! Server gets from session cookie
+      // ❌ REMOVED: data.append("user_id", userId);
+      
       Object.keys(formData).forEach((key) => {
-        data.append(key, formData[key]);
+        if (formData[key]) {
+          data.append(key, formData[key]);
+        }
       });
 
       if (profileImageFile) data.append("profileImage", profileImageFile);
       if (coverImageFile) data.append("coverImage", coverImageFile);
+      
       const res = await profileService.updateProfile(data);
+      
       if (res.success) {
-        onSaved();
+        if (onSaved) onSaved();
         handleClose();
+      } else {
+        setError(res.message || "Failed to save profile");
       }
     } catch (err) {
       console.error("Error saving profile:", err);
-      alert("Failed to save profile info");
+      setError(err.response?.data?.message || "Failed to save profile info");
     } finally {
       setLoading(false);
     }
   };
+
+  // Only show modal if authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
+
   return (
     <Modal open={open} onClose={handleClose} closeAfterTransition>
       <Box sx={style}>
@@ -105,13 +143,19 @@ function AddProfileInfoForm({ open, handleClose, userId, onSaved }) {
           {formData.username ? "Edit Profile Info" : "Add Profile Info"}
         </Typography>
 
+        {error && (
+          <Alert severity="error" sx={{ mb: 2, borderRadius: "12px" }}>
+            {error}
+          </Alert>
+        )}
+
         <Stack component="form" spacing={2} onSubmit={handleSubmit}>
           {[
             { label: "Username", name: "username" },
             { label: "Bio", name: "bio", multiline: true, rows: 3 },
             { label: "Hobbies", name: "hobbies" },
             { label: "Gender", name: "gender" },
-            { label: "Age", name: "age" },
+            { label: "Age", name: "age", type: "number" },
             { label: "Education", name: "education" },
             { label: "Country", name: "country" },
           ].map((field) => (
@@ -119,13 +163,16 @@ function AddProfileInfoForm({ open, handleClose, userId, onSaved }) {
               key={field.name}
               label={field.label}
               name={field.name}
-              value={formData[field.name]}
+              type={field.type || "text"}
+              value={formData[field.name] || ""}
               onChange={handleChange}
               multiline={field.multiline}
               minRows={field.rows}
               fullWidth
+              disabled={loading}
             />
           ))}
+          
           <Box>
             <Typography variant="body2" gutterBottom fontWeight="bold">
               Profile Image
@@ -135,10 +182,10 @@ function AddProfileInfoForm({ open, handleClose, userId, onSaved }) {
               component="label"
               fullWidth
               startIcon={<CloudUploadIcon />}
+              disabled={loading}
+              sx={{ borderRadius: "12px", textTransform: "none" }}
             >
-              {profileImageFile
-                ? profileImageFile.name
-                : "Choose Profile Picture"}
+              {profileImageFile ? profileImageFile.name : "Choose Profile Picture"}
               <input
                 type="file"
                 name="profileImage"
@@ -148,6 +195,7 @@ function AddProfileInfoForm({ open, handleClose, userId, onSaved }) {
               />
             </Button>
           </Box>
+          
           <Box>
             <Typography variant="body2" gutterBottom fontWeight="bold">
               Cover Image
@@ -157,6 +205,8 @@ function AddProfileInfoForm({ open, handleClose, userId, onSaved }) {
               component="label"
               fullWidth
               startIcon={<CloudUploadIcon />}
+              disabled={loading}
+              sx={{ borderRadius: "12px", textTransform: "none" }}
             >
               {coverImageFile ? coverImageFile.name : "Choose Cover Photo"}
               <input
@@ -168,17 +218,25 @@ function AddProfileInfoForm({ open, handleClose, userId, onSaved }) {
               />
             </Button>
           </Box>
+          
           <Button
             type="submit"
             variant="contained"
             disabled={loading}
-            sx={{ mt: 2, height: "45px", borderRadius: "10px" }}
+            sx={{ 
+              mt: 2, 
+              height: "48px", 
+              borderRadius: "12px",
+              textTransform: "none",
+              fontWeight: 700,
+            }}
           >
-            {loading ? "Uploading..." : "Save Profile"}
+            {loading ? <CircularProgress size={24} color="inherit" /> : "Save Profile"}
           </Button>
         </Stack>
       </Box>
     </Modal>
   );
 }
+
 export default AddProfileInfoForm;
