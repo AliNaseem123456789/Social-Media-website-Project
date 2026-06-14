@@ -16,15 +16,8 @@ import {
   IconButton,
   Chip,
   Drawer,
-  FormControl,
-  InputLabel,
-  Select,
   Slider,
-  FormGroup,
-  FormControlLabel,
-  Checkbox,
   Divider,
-  Paper,
   Badge,
   ToggleButton,
   ToggleButtonGroup,
@@ -77,6 +70,7 @@ function MyPosts() {
   const { user: currentUser, isAuthenticated } = useAuth();
   const userId = currentUser?.id;
   const observerRef = useRef();
+  const isInitialMount = useRef(true);
 
   // Count active filters
   useEffect(() => {
@@ -87,16 +81,7 @@ function MyPosts() {
     setActiveFiltersCount(count);
   }, [timeFilter, contentType, minLikes]);
 
-  // Reset pagination when filters/sort change
-  useEffect(() => {
-    if (userId) {
-      setPosts([]);
-      setHasMore(true);
-      setNextCursor(null);
-      fetchMyPosts(true);
-    }
-  }, [sortBy, timeFilter, contentType, minLikes]);
-
+  // Fetch posts function - NOT wrapped in useCallback to prevent loop
   const fetchMyPosts = async (reset = false) => {
     if (!userId) {
       setLoading(false);
@@ -139,16 +124,27 @@ function MyPosts() {
     }
   };
 
-  const loadMorePosts = async () => {
-    if (loadingMore || !hasMore) return;
+  // Reset pagination when filters/sort change
+  useEffect(() => {
+    if (userId && !isInitialMount.current) {
+      setPosts([]);
+      setHasMore(true);
+      setNextCursor(null);
+      fetchMyPosts(true);
+    }
+    isInitialMount.current = false;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortBy, timeFilter, contentType, minLikes]);
+
+  // Load more posts function
+  const loadMorePosts = useCallback(async () => {
+    if (loadingMore || !hasMore || loading) return;
     setLoadingMore(true);
     await fetchMyPosts(false);
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingMore, hasMore, loading]);
 
-  const refreshPosts = () => {
-    fetchMyPosts(true);
-  };
-
+  // Initial load and auth check
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/login");
@@ -157,6 +153,7 @@ function MyPosts() {
     if (userId) {
       fetchMyPosts(true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, isAuthenticated, navigate]);
 
   const handleLike = async (postId, e) => {
@@ -188,7 +185,7 @@ function MyPosts() {
     }, { threshold: 0.1 });
     
     observerRef.current.observe(node);
-  }, [hasMore, loadingMore, loading]);
+  }, [hasMore, loadingMore, loading, loadMorePosts]);
 
   const handleSortClick = (event) => {
     setSortAnchorEl(event.currentTarget);
@@ -205,11 +202,6 @@ function MyPosts() {
     setTimeFilter('all');
     setContentType('all');
     setMinLikes(0);
-  };
-
-  const getSortLabel = () => {
-    const option = SORT_OPTIONS.find(opt => opt.value === sortBy);
-    return option ? option.label : 'Sort';
   };
 
   if (!isAuthenticated) {
