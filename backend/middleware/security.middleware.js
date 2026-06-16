@@ -39,7 +39,6 @@ export const securityHeaders = (isProduction = false) => {
     });
 };
 
-// ========== 2. CORS CONFIGURATION ==========
 export const corsConfig = (isProduction = false) => {
     const allowedOrigins = isProduction 
         ? ['https://yourdomain.com', 'https://api.yourdomain.com']

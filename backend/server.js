@@ -69,7 +69,6 @@ const apolloServer = new ApolloServer({
   resolvers,
   plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
 });
-
 await apolloServer.start();
 app.use(
   cors({
@@ -87,7 +86,6 @@ app.use('/api', rateLimiters.general);
 app.use(customSecurityHeaders);
 app.use(sessionSecurityHeaders);
 
-
 app.use(preventParameterPollution);
 app.use(express.json());
 app.use(requestLogger);
@@ -100,7 +98,6 @@ app.use(
   }),
 );
 app.use("/api", authRoutes);
-
 app.use("/api/posts", postRoutes);
 app.use("/api/friends", friendsRoutes);
 app.use("/api", chatsRoutes);
@@ -150,10 +147,6 @@ io.use(async (socket, next) => {
 io.on("connection", (socket) => {
   handleConnection(io, socket);
 });
-
-
-
-// ============ START SERVER ============
 async function startServer() {
   const redisConnected = await redisClient.connect();
   
@@ -169,5 +162,4 @@ async function startServer() {
     console.log(`Cache stats: http://localhost:${PORT}/admin/cache-stats`);
   });
 }
-
 startServer().catch(console.error);

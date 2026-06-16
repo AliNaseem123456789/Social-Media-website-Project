@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend-main
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./backend/.env  # Explicitly load .env file
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  email-microservice:
+    build:
+      context: ./email-microservice
+      dockerfile: Dockerfile
+    container_name: backend-email
+    ports:
+      - "5001:5001"
+    env_file:
+      - ./email-microservice/.env  # Or the path to your email .env
+    restart: unless-stopped
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
