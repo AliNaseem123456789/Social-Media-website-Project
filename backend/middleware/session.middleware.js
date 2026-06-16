@@ -90,11 +90,11 @@ export const sessionMiddleware = async (req, res, next) => {
             // Set cookie if new or changed
             if (!sessionId || saveSessionId !== sessionId) {
                 const isProduction = process.env.NODE_ENV === 'production';
-            //    res.setHeader('Set-Cookie', `sessionId=${saveSessionId}; HttpOnly; Path=/; Max-Age=86400; SameSite=none; Secure`);
+               res.setHeader('Set-Cookie', `sessionId=${saveSessionId}; HttpOnly; Path=/; Max-Age=86400; SameSite=none; Secure`);
             // Development only
-            res.setHeader('Set-Cookie', `sessionId=${saveSessionId}; HttpOnly; Path=/; Max-Age=86400; SameSite=lax`);
-                console.log(`🍪 Set cookie: sessionId=${saveSessionId}`);
-            }
+            // res.setHeader('Set-Cookie', `sessionId=${saveSessionId}; HttpOnly; Path=/; Max-Age=86400; SameSite=lax`);
+            //     console.log(`🍪 Set cookie: sessionId=${saveSessionId}`);
+            // }
             
             req.session._needsSave = false;
         } else if ((!req.session || !req.session.userId) && sessionId) {
