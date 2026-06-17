@@ -1,39 +1,32 @@
 version: 0.2
 
+env:
+  variables:
+    AWS_ACCOUNT_ID: "019256649767"
+    AWS_DEFAULT_REGION: "us-east-1"
+    REPO_URI_BACKEND: "019256649767.dkr.ecr.us-east-1.amazonaws.com/my-app-backend"
+    REPO_URI_EMAIL: "019256649767.dkr.ecr.us-east-1.amazonaws.com/my-app-email"
+    IMAGE_TAG: "latest"
+
 phases:
   pre_build:
     commands:
-      - echo Logging in to Amazon ECR...
+      - echo "Logging in to Amazon ECR..."
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
-      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - IMAGE_TAG=${COMMIT_HASH:=latest}
-      - echo Using image tag: $IMAGE_TAG
 
   build:
     commands:
-      - echo Building backend...
+      - echo "Building backend..."
       - docker build -t $REPO_URI_BACKEND:$IMAGE_TAG ./backend
-      - docker tag $REPO_URI_BACKEND:$IMAGE_TAG $REPO_URI_BACKEND:latest
-      
-      - echo Building email microservice...
+      - echo "Building email microservice..."
       - docker build -t $REPO_URI_EMAIL:$IMAGE_TAG ./email-microservice
-      - docker tag $REPO_URI_EMAIL:$IMAGE_TAG $REPO_URI_EMAIL:latest
 
   post_build:
     commands:
-      - echo Pushing backend to ECR...
+      - echo "Pushing to ECR..."
       - docker push $REPO_URI_BACKEND:$IMAGE_TAG
-      - docker push $REPO_URI_BACKEND:latest
-      
-      - echo Pushing email microservice to ECR...
       - docker push $REPO_URI_EMAIL:$IMAGE_TAG
-      - docker push $REPO_URI_EMAIL:latest
-      
-      - echo Writing image definitions file...
-      - printf '[{"name":"backend-container","imageUri":"%s"},{"name":"email-container","imageUri":"%s"}]' $REPO_URI_BACKEND:$IMAGE_TAG $REPO_URI_EMAIL:$IMAGE_TAG > imagedefinitions.json
-      
-      - echo Build completed successfully!
-      - cat imagedefinitions.json
+      - echo "Done!"
 
 artifacts:
-  files: imagedefinitions.json
+  files: '**/*'
