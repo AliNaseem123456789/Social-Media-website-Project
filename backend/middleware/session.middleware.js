@@ -94,7 +94,7 @@ export const sessionMiddleware = async (req, res, next) => {
             // Development only
             // res.setHeader('Set-Cookie', `sessionId=${saveSessionId}; HttpOnly; Path=/; Max-Age=86400; SameSite=lax`);
             //     console.log(`🍪 Set cookie: sessionId=${saveSessionId}`);
-            // }
+            }
             
             req.session._needsSave = false;
         } else if ((!req.session || !req.session.userId) && sessionId) {
