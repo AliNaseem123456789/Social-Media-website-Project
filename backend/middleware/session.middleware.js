@@ -108,7 +108,7 @@ export const sessionMiddleware = async (req, res, next) => {
     next();
 };
 
-// ✅ FIXED: createSession now sets an ID
+// FIXED: createSession now sets an ID
 export const createSession = (req, user) => {
     const sessionId = generateSessionId();
     req.session = {

@@ -2,6 +2,7 @@ import axios from "axios";
 
 const apiClient = axios.create({
 // baseURL: "http://54.221.66.183:5000/api",
+// baseURL: "https://socialwebsite.duckdns.org/api",
 // baseURL: "http://54.221.66.183/api",
 // baseURL: "https://my-social-app.duckdns.org/api",
   baseURL: "http://localhost:5000/api",

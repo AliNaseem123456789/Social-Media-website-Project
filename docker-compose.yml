@@ -26,7 +26,7 @@ services:
     ports:
       - "5001:5001"
     env_file:
-      - ./email-microservice/.env
+      - ./backend/.env
     restart: unless-stopped
     networks:
       - app-network

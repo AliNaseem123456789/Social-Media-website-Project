@@ -34,47 +34,73 @@ class EventOrchestrator {
         return true;
     }
 
-    async onPostCreated(postData) {
-        console.log('📝 onPostCreated called with:', postData);
+    async onPostLiked(postId, postOwnerId, likerId, likerName, postOwnerEmail, postOwnerName) {
+        console.log('🔔 onPostLiked called with:', {
+            postId,
+            postOwnerId,
+            likerId,
+            likerName,
+            postOwnerEmail,
+            postOwnerName
+        });
 
         const results = {
             sns: null,
             sqs: null,
-            feed: null,
             email: null
         };
 
+        // 1️⃣ SNS: Broadcast (only if configured)
         if (this.isAWSConfigured) {
             try {
-                results.sns = await this.sns.publishPostCreated(postData);
-                console.log('✅ SNS post created published');
+                // ✅ FIX: Pass as object, not individual parameters
+                results.sns = await this.sns.publishPostLiked({
+                    postId: postId,
+                    userId: postOwnerId,
+                    likerId: likerId,
+                    likerName: likerName
+                });
+                console.log('✅ SNS event published');
             } catch (error) {
                 console.error('❌ SNS failed:', error.message);
                 results.sns = { success: false, error: error.message };
             }
-
-            // ✅ CORRECT: Send to feed queue for new post
             try {
-                results.feed = await this.sqs.sendToFeedQueue({
-                    action: 'NEW_POST',           // ✅ NEW_POST for new posts
-                    postId: postData.id,          // ✅ postData.id exists here
-                    userId: postData.userId,      // ✅ postData.userId exists here
-                    timestamp: Date.now()
+            results.feed = await this.sqs.sendToFeedQueue({
+                action: 'NEW_POST',
+                postId: postData.id,
+                userId: postData.userId,
+                timestamp: Date.now()
+            });
+            console.log('✅ Feed update queued');
+        } catch (error) {
+            console.error('❌ Feed queue failed:', error.message);
+            results.feed = { success: false, error: error.message };
+        }
+
+            // 2️⃣ SQS: Notification queue (only if configured)
+            try {
+                results.sqs = await this.sqs.sendToNotificationQueue({
+                    type: 'LIKE',
+                    recipientId: postOwnerId,
+                    actorId: likerId,
+                    actorName: likerName,
+                    postId: postId
                 });
-                console.log('✅ Feed update queued (new post)');
+                console.log('✅ SQS notification queued');
             } catch (error) {
-                console.error('❌ Feed queue failed:', error.message);
-                results.feed = { success: false, error: error.message };
+                console.error('❌ SQS failed:', error.message);
+                results.sqs = { success: false, error: error.message };
             }
 
-            // 2️⃣ SQS: Analytics
+            // 3️⃣ SQS: Analytics (only if configured)
             try {
                 results.sqsAnalytics = await this.sqs.sendToAnalyticsQueue({
-                    event: 'POST_CREATED',
-                    userId: postData.userId,
+                    event: 'POST_LIKED',
+                    userId: likerId,
                     data: {
-                        postId: postData.id,
-                        content: postData.content
+                        postId: postId,
+                        postOwnerId: postOwnerId
                     }
                 });
                 console.log('✅ SQS analytics queued');
@@ -82,8 +108,11 @@ class EventOrchestrator {
                 console.error('❌ SQS analytics failed:', error.message);
                 results.sqsAnalytics = { success: false, error: error.message };
             }
+        } else {
+            console.log('ℹ️ AWS SQS/SNS skipped (not configured)');
+            results.sns = { success: false, skipped: true, reason: 'AWS not configured' };
+            results.sqs = { success: false, skipped: true, reason: 'AWS not configured' };
         }
-
 
         // 4️⃣ RabbitMQ: Email notification (ALWAYS works)
         if (postOwnerEmail && postOwnerName) {
