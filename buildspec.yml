@@ -4,10 +4,10 @@ env:
     AWS_ACCOUNT_ID: "019256649767"
     AWS_DEFAULT_REGION: "us-east-1"
     IMAGE_TAG: "latest"
-    REPO_URI_BACKEND: ".../my-app-backend"
-    REPO_URI_EMAIL: ".../my-app-email"
-    REPO_URI_ANALYTICS: ".../my-app-analytics-worker"
-    REPO_URI_FEED: ".../my-app-feed-worker"
+    REPO_URI_BACKEND: "019256649767.dkr.ecr.us-east-1.amazonaws.com/my-app-backend"
+    REPO_URI_EMAIL: "019256649767.dkr.ecr.us-east-1.amazonaws.com/my-app-email"
+    REPO_URI_ANALYTICS: "019256649767.dkr.ecr.us-east-1.amazonaws.com/my-app-analytics-worker"
+    REPO_URI_FEED: "019256649767.dkr.ecr.us-east-1.amazonaws.com/my-app-feed-worker"
 phases:
   pre_build:
     commands:
