@@ -24,7 +24,19 @@ export const handleConnection = (io, socket) => {
       console.log(`User ${userId} registered`);
     }
   });
+  // ✅ Auto-join notification room using userId from session
+if (userId) {
+  users[userId] = socket.id;
+  socket.join(`user_${userId}`);  // ← ADD THIS LINE
+  console.log(`User ${userId} joined notification room: user_${userId}`);
+}
 
+// ✅ Also handle explicit join_room from frontend
+socket.on("join_room", ({ userId: roomUserId }) => {
+  const room = `user_${roomUserId}`;
+  socket.join(room);
+  console.log(`User ${userId} joined room: ${room}`);
+});
   // ✅ PRIVATE MESSAGE - CHANGED: 'from' comes from session, not client
   socket.on("private_message", async ({ to, message }) => {
     // 'from' is from session, NOT from client!

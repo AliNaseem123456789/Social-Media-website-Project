@@ -1,9 +1,10 @@
 version: '3.8'
-#: This version uses image: (pulls from ECR) instead of build: this is ECR docker version
+
 services:
-  # ====== BACKEND ======
   backend:
-    image: 019256649767.dkr.ecr.us-east-1.amazonaws.com/my-app-backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: backend-main
     ports:
       - "5000:5000"
@@ -18,10 +19,10 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-
-  # ====== EMAIL MICROSERVICE ======
   email-microservice:
-    image: 019256649767.dkr.ecr.us-east-1.amazonaws.com/my-app-email:latest
+    build:
+      context: ./email-microservice
+      dockerfile: Dockerfile
     container_name: backend-email
     ports:
       - "5001:5001"
@@ -31,12 +32,12 @@ services:
     networks:
       - app-network
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
 
-  # ====== ANALYTICS WORKER ======
   analytics-worker:
-    image: 019256649767.dkr.ecr.us-east-1.amazonaws.com/my-app-analytics-worker:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.worker
     container_name: analytics-worker
     env_file:
       - ./backend/.env
@@ -47,10 +48,10 @@ services:
       backend:
         condition: service_healthy
     command: node workers/analytics-worker.js
-
-  # ====== FEED WORKER ======
   feed-worker:
-    image: 019256649767.dkr.ecr.us-east-1.amazonaws.com/my-app-feed-worker:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.worker
     container_name: feed-worker
     env_file:
       - ./backend/.env

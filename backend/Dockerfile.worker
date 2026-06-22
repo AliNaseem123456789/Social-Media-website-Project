@@ -1,0 +1,14 @@
+FROM node:20-alpine
+WORKDIR /app
+
+# Copy package files first (for better caching)
+COPY package*.json ./
+
+# Install production dependencies ONLY
+RUN npm ci --only=production
+
+# Copy source code (including shared modules)
+COPY . .
+
+# The worker specific code is at consumers/analytics-worker.js
+CMD ["node", "consumers/analytics-worker.js"]

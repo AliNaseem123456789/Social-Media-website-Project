@@ -60,9 +60,9 @@ export const sessionMiddleware = async (req, res, next) => {
         if (sessionData) {
             req.session = sessionData;
             req.session.id = sessionId;
-            console.log(`✅ Session loaded: ${sessionId} for user ${sessionData.userId}`);
+            console.log(` Session loaded: ${sessionId} for user ${sessionData.userId}`);
         } else {
-            console.log(`⚠️ Invalid session: ${sessionId}`);
+            console.log(`Invalid session: ${sessionId}`);
         }
     }
     

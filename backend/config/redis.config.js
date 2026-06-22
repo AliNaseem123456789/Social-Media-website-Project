@@ -12,7 +12,7 @@ class RedisClient {
 
     async connect() {
         if (!this.restUrl || !this.restToken) {
-            console.error('❌ Redis credentials missing in .env');
+            console.error('Redis credentials missing in .env');
             return false;
         }
         
@@ -26,12 +26,12 @@ class RedisClient {
             
             if (response.status === 200) {
                 this.isConnected = true;
-                console.log('✅ Upstash Redis connected!');
+                console.log('Upstash Redis connected!');
                 return true;
             }
             return false;
         } catch (error) {
-            console.error('❌ Redis connection failed:', error.message);
+            console.error('Redis connection failed:', error.message);
             return false;
         }
     }
@@ -48,19 +48,16 @@ async get(key) {
             headers: { 'Authorization': `Bearer ${this.restToken}` }
         });
         
-        // Log raw response for debugging
-        console.log('📥 RAW Redis response:', JSON.stringify(response.data).substring(0, 200));
-        
         if (response.data.result === null) return null;
         
         // Parse the result - it's a JSON string
         let parsed;
         try {
             parsed = JSON.parse(response.data.result);
-            console.log('✅ Parsed successfully, username:', parsed.username);
+            console.log('Parsed successfully, username:', parsed.username);
             return parsed;
         } catch (e) {
-            console.log('❌ Parse error:', e.message);
+            console.log('Parse error:', e.message);
             return response.data.result;
         }
     } catch (error) {
@@ -72,10 +69,6 @@ async get(key) {
 async set(key, value, ttlSeconds = 300) {
     if (!this.isConnected) return false;
     try {
-        // Log what we're storing
-        console.log('📤 Storing to Redis, username:', value.username);
-        
-        // Convert to string
         const stringValue = JSON.stringify(value);
         
         const response = await axios({

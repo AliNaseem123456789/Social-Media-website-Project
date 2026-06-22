@@ -50,7 +50,7 @@ function Sidebar() {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [open, setOpen] = useState(false);
   
-  // ✅ Get user from AuthContext, NOT localStorage!
+  
   const { user, logout } = useAuth();
   const userId = user?.id;  // ✅ From session, not localStorage
 

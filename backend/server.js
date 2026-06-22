@@ -7,10 +7,8 @@ import authRoutes from "./routes/authRoutes.js";
 import postRoutes from "./routes/postRoutes.js";
 import friendsRoutes from "./routes/friendsRoutes.js";
 import chatsRoutes from "./routes/chatsRoutes.js";
-// Add this line with your other route imports
 import redisRoutes from "./routes/redisRoutes.js";
 
-// import settingsRoutes from "./routes/settingsRoutes.js"
 import { requestLogger } from "./middleware/logger.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import searchRoutes from "./routes/search.routes.js";
@@ -28,6 +26,7 @@ import { getRedisStorage, deleteRedisKey, flushRedis } from "./controllers/redis
 import { createCommentLoader, createUserLoader,createLikeStatusLoader } from "./graphql/loaders.js";
 import cookieParser from "cookie-parser";
 import { sessionMiddleware } from "./middleware/session.middleware.js";
+import notificationConsumer from "./consumers/NotificationConsumer.js";
 const isProduction = false;
 const redis = new Redis("rediss://default:gQAAAAAAAffMAAIgcDJlNzNmNzUxZDVhNDk0MGJlYjdkNDVhNjQ1MDU5Y2U4ZQ@humorous-troll-128972.upstash.io:6379");
 // const redis = new Redis("redis://localhost:6379");
@@ -104,6 +103,10 @@ app.use("/api", chatsRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/redis", redisRoutes);
+import notificationRoutes from "./routes/notificationRoutes.js";
+app.use("/api", notificationRoutes);
+import analyticsRoutes from "./routes/analyticsRoutes.js";
+app.use("/api", analyticsRoutes);
 const io = new Server(httpServer, {
   cors: {
     origin: [
@@ -112,6 +115,10 @@ const io = new Server(httpServer, {
     ],
     methods: ["GET", "POST"],
     credentials: true,
+     pingTimeout: 60000,
+  pingInterval: 25000,
+  transports: ['websocket', 'polling'],
+  allowEIO3: true,
   },
 });
 io.use(async (socket, next) => {
@@ -149,17 +156,31 @@ io.on("connection", (socket) => {
 });
 async function startServer() {
   const redisConnected = await redisClient.connect();
-  
-  if (!redisConnected) {
-    console.warn('Redis not connected - caching disabled, but server will still work');
-  }
 
   const PORT = process.env.PORT || 5000;
-  httpServer.listen(PORT, () => {
-    console.log(`API & Sockets running on port ${PORT}`);
-    console.log(`GraphQL ready at http://localhost:${PORT}/api/graphql`);
-    console.log(`Redis caching: ${redisConnected ? 'ENABLED ' : 'DISABLED '}`);
-    console.log(`Cache stats: http://localhost:${PORT}/admin/cache-stats`);
+
+  // Wait for the server to actually be listening before touching IO
+  await new Promise((resolve) => {
+    httpServer.listen(PORT, () => {
+      console.log(`API & Sockets running on port ${PORT}`);
+      console.log(`GraphQL ready at http://localhost:${PORT}/api/graphql`);
+      console.log(`Redis caching: ${redisConnected ? 'ENABLED' : 'DISABLED'}`);
+      resolve();
+    });
   });
+  notificationConsumer.setIO(io);
+
+  try {
+    await notificationConsumer.start();
+  } catch (error) {
+    console.error('Failed to start notification consumer:', error);
+  }
 }
+// try {
+//     await analyticsConsumer.start();
+//     console.log('✅ Analytics Consumer started successfully');
+//   } catch (error) {
+//     console.error('❌ Failed to start analytics consumer:', error);  
+//   }
+
 startServer().catch(console.error);

@@ -22,6 +22,7 @@ export const typeDefs = `#graphql
     created_at: String 
     comments: [Comment]
     avatar_url: String
+    liked: Boolean  
   }
   
   type PostEdge {
@@ -41,5 +42,7 @@ export const typeDefs = `#graphql
 
   type Query {
     getFeed(first: Int, after: String): FeedResult!
-  }
+     getChronologicalFeed(first: Int, after: String): FeedResult!
+     getGlobalFeed(first: Int, after: String): FeedResult!
+    }
 `;

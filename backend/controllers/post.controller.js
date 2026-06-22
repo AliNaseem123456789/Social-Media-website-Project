@@ -2,7 +2,7 @@ import supabase from "../supabaseClient.js";
 import redisClient from '../config/redis.config.js';
 import Redis from "ioredis";
 import EmailPublisher from "../services/EmailPublisher.js";
-
+import EventOrchestrator from "../services/orchestrators/EventOrchestrators.js";
 const redis = new Redis("rediss://default:gQAAAAAAAffMAAIgcDJlNzNmNzUxZDVhNDk0MGJlYjdkNDVhNjQ1MDU5Y2U4ZQ@humorous-troll-128972.upstash.io:6379");
 export const createPost = async (req, res) => {
   const userId = req.session?.userId;
@@ -70,95 +70,83 @@ export const likePost = async (req, res) => {
   const { post_id } = req.body;
   
   if (!userId) {
-    return res.status(401).json({ 
-      success: false, 
-      message: "Not authenticated" 
-    });
+    return res.status(401).json({ success: false, message: "Not authenticated" });
   }
   
   if (!post_id) {
-    return res.status(400).json({ 
-      success: false, 
-      message: "Post ID required" 
-    });
+    return res.status(400).json({ success: false, message: "Post ID required" });
   }
+
   try {
     const { data: post, error: postError } = await supabase
       .from("posts")
-      .select("user_id, total_likes")
+      .select("user_id")
       .eq("post_id", post_id)
       .single();
     
-    if (postError) throw postError;    
+    if (postError) throw postError;
+
     const { data: existingLike } = await supabase
       .from("likes")
-      .select("*")
+      .select("like_id")
       .eq("user_id", userId)
       .eq("post_id", post_id)
       .maybeSingle();
     
     if (existingLike) {
-      await supabase.from("likes").delete().eq("id", existingLike.id);
-      
+      await supabase.from("likes").delete().eq("like_id", existingLike.like_id);
+
+      const { count } = await supabase
+        .from("likes")
+        .select("*", { count: "exact", head: true })
+        .eq("post_id", post_id);
+
       const { data: updatedPost } = await supabase
         .from("posts")
-        .update({ total_likes: Math.max((post.total_likes || 1) - 1, 0) })
+        .update({ total_likes: count ?? 0 })
         .eq("post_id", post_id)
-        .select()
+        .select("total_likes")
         .single();
-      
-      // Clear cache for this post
-      await redis.del(`post:full:${post_id}`).catch(console.error);
-      
-      return res.json({
-        success: true,
-        total_likes: updatedPost.total_likes,
-        liked: false,
-      });
-      
+
+      return res.json({ success: true, total_likes: updatedPost.total_likes, liked: false });
+
     } else {
-      await supabase.from("likes").insert([{ user_id: userId, post_id }]);      
+      await supabase.from("likes").insert([{ user_id: userId, post_id }]);
+
+      const { count } = await supabase
+        .from("likes")
+        .select("*", { count: "exact", head: true })
+        .eq("post_id", post_id);
+
       const { data: updatedPost } = await supabase
         .from("posts")
-        .update({ total_likes: (post.total_likes || 0) + 1 })
+        .update({ total_likes: count ?? 0 })
         .eq("post_id", post_id)
-        .select()
+        .select("total_likes")
         .single();
-      
-      // Clear cache for this post
-      await redis.del(`post:full:${post_id}`).catch(console.error);
-      
-      // Send email notification (only if not liking own post)
+
       if (post.user_id !== userId) {
         const { data: postOwner } = await supabase
           .from("users")
           .select("email, username")
           .eq("id", post.user_id)
           .single();
-        
-        const { data: liker } = await supabase
-          .from("users")
-          .select("username")
-          .eq("id", userId)
-          .single();
-        
-        if (postOwner && liker) {
-          EmailPublisher.sendPostLikeEmail({
-            to: postOwner.email,
-            recipientName: postOwner.username,
-            likerName: liker.username,
-            postLink: `${process.env.APP_URL || 'http://localhost:3000'}/posts/${post_id}`
-          }).catch(err => console.error('Failed to queue like email:', err.message));
+
+        if (postOwner) {
+          await EventOrchestrator.onPostLiked(
+            post_id,
+            post.user_id,
+            userId,
+            req.session.username,
+            postOwner.email,
+            postOwner.username
+          ).catch(console.error);
         }
       }
-      
-      return res.json({
-        success: true,
-        total_likes: updatedPost.total_likes,
-        liked: true,
-      });
+
+      return res.json({ success: true, total_likes: updatedPost.total_likes, liked: true });
     }
-    
+
   } catch (err) {
     console.error('Like post error:', err);
     res.status(500).json({ success: false, message: "Database error" });

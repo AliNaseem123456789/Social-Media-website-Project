@@ -6,17 +6,22 @@ import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { AuthProvider } from "./features/auth/context/AuthContext";
+import { SocketProvider } from "./context/socketContext";
 const GOOGLE_CLIENT_ID = "773656122565-d31gu4k86ko1jbf1ol14q71sqe0fq5ja.apps.googleusercontent.com";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 
 root.render(
   <React.StrictMode>
+   
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <AuthProvider>  {/* ✅ WRAP App with AuthProvider */}
+      <AuthProvider>  
+         <SocketProvider>
         <App />
+        </SocketProvider>
       </AuthProvider>
     </GoogleOAuthProvider>
+    
   </React.StrictMode>
 );
 

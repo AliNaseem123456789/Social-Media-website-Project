@@ -5,7 +5,13 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon server.js"
+    "start": "nodemon server.js",
+   "start:analytics": "node consumers/analytics-worker.js",
+    "dev:analytics": "nodemon consumers/analytics-worker.js",
+    "start:notification": "node consumers/notification-worker.js",
+    "start:feed": "node consumers/feed-worker.js",
+    "start:all": "concurrently \"npm run start\" \"npm run start:analytics\"",
+    "dev:all": "concurrently \"npm run dev\" \"npm run dev:analytics\""
   },
   "keywords": [],
   "author": "",
@@ -14,9 +20,13 @@
   "dependencies": {
     "@apollo/server": "^5.3.0",
     "@as-integrations/express5": "^1.1.2",
+    "@aws-sdk/client-s3": "^3.1072.0",
+    "@aws-sdk/client-sns": "^3.1072.0",
+    "@aws-sdk/client-sqs": "^3.1072.0",
     "@elastic/elasticsearch": "^9.1.1",
     "@supabase/supabase-js": "^2.57.2",
     "amqplib": "^2.0.1",
+    "aws-sdk": "^2.1693.0",
     "axios": "^1.16.1",
     "bcrypt": "^6.0.0",
     "body-parser": "^2.2.2",

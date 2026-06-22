@@ -1,32 +1,36 @@
 version: 0.2
-
 env:
   variables:
     AWS_ACCOUNT_ID: "019256649767"
     AWS_DEFAULT_REGION: "us-east-1"
-    REPO_URI_BACKEND: "019256649767.dkr.ecr.us-east-1.amazonaws.com/my-app-backend"
-    REPO_URI_EMAIL: "019256649767.dkr.ecr.us-east-1.amazonaws.com/my-app-email"
     IMAGE_TAG: "latest"
-
+    REPO_URI_BACKEND: ".../my-app-backend"
+    REPO_URI_EMAIL: ".../my-app-email"
+    REPO_URI_ANALYTICS: ".../my-app-analytics-worker"
+    REPO_URI_FEED: ".../my-app-feed-worker"
 phases:
   pre_build:
     commands:
       - echo "Logging in to Amazon ECR..."
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
-
   build:
     commands:
       - echo "Building backend..."
       - docker build -t $REPO_URI_BACKEND:$IMAGE_TAG ./backend
       - echo "Building email microservice..."
       - docker build -t $REPO_URI_EMAIL:$IMAGE_TAG ./email-microservice
-
+      - echo "Building analytics worker..."
+      - docker build -t $REPO_URI_ANALYTICS:$IMAGE_TAG -f ./backend/Dockerfile.worker ./backend
+      - echo "Building feed worker..."
+      - docker build -t $REPO_URI_FEED:$IMAGE_TAG -f ./backend/Dockerfile.feed ./backend
   post_build:
     commands:
-      - echo "Pushing to ECR..."
+      - echo "Pushing ALL images to ECR..."
       - docker push $REPO_URI_BACKEND:$IMAGE_TAG
       - docker push $REPO_URI_EMAIL:$IMAGE_TAG
-      - echo "Done!"
-
+      - docker push $REPO_URI_ANALYTICS:$IMAGE_TAG
+      - docker push $REPO_URI_FEED:$IMAGE_TAG
+      - echo "All images pushed successfully!"
 artifacts:
-  files: '**/*'
+  files:
+    - docker-compose.yml  # Only the deploy file is needed now

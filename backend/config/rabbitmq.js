@@ -14,10 +14,10 @@ class RabbitMQManager {
       const rabbitmqUrl = process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672';
       this.connection = await amqp.connect(rabbitmqUrl);
       this.channel = await this.connection.createChannel();
-      console.log('✅ Backend: Connected to RabbitMQ');
+      console.log('Backend: Connected to RabbitMQ');
       return this.channel;
     } catch (error) {
-      console.error('❌ Backend: RabbitMQ connection failed:', error.message);
+      console.error('Backend: RabbitMQ connection failed:', error.message);
       return null;
     }
   }
@@ -28,7 +28,7 @@ class RabbitMQManager {
     }
     
     if (!this.channel) {
-      console.error('❌ Backend: Cannot publish - no channel');
+      console.error('Backend: Cannot publish - no channel');
       return false;
     }
     
@@ -38,7 +38,7 @@ class RabbitMQManager {
       persistent: true
     });
     
-    console.log(`📤 Backend: Published to ${queueName}`);
+    console.log(`Backend: Published to ${queueName}`);
     return true;
   }
 }

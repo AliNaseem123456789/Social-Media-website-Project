@@ -21,6 +21,7 @@ import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
 import AddCircleRoundedIcon from "@mui/icons-material/AddCircleRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import { searchService } from "../features/search/services/SearchService";
+import NotificationBell from "./NotificationBell";
 // Modern Search Styling
 const Search = styled("div")(({ theme }) => ({
   position: "relative",
@@ -218,6 +219,7 @@ function Navbar() {
               icon={<AddCircleRoundedIcon />}
               active={location.pathname === "/postwrite"}
             />
+             <NotificationBell />
           </Box>
 
           {/* 3. Right Section: Logout */}
