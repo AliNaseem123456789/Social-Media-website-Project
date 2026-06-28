@@ -1,5 +1,3 @@
-// ChatSidebar.jsx - FIX THE INFINITE LOOP
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -33,12 +31,9 @@ function ChatSidebar() {
   
   const { user: currentUser } = useAuth();
   const currentUserId = currentUser?.id;
-
-  // ✅ Use a ref to prevent multiple calls
   const hasLoaded = React.useRef(false);
 
   useEffect(() => {
-    // ✅ Only load once
     if (!currentUserId || hasLoaded.current) return;
     
     hasLoaded.current = true;
@@ -64,14 +59,12 @@ function ChatSidebar() {
     };
     
     loadData();
-  }, [currentUserId]); // ✅ Only depends on currentUserId
+  }, [currentUserId]); 
 
-  // Filter friends based on search
   const filteredFriends = friends.filter((f) =>
     f.username?.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Format last chat time
   const formatLastChatTime = (timestamp) => {
     if (!timestamp) return "";
     const date = new Date(timestamp);
@@ -106,7 +99,6 @@ function ChatSidebar() {
         bgcolor: "#fff",
       }}
     >
-      {/* Header */}
       <Box sx={{ p: 2.5, pb: 1.5, borderBottom: "1px solid #e0e0e0" }}>
         <Typography
           variant="h5"
@@ -140,8 +132,6 @@ function ChatSidebar() {
           />
         </Box>
       </Box>
-
-      {/* Recent Chats Section */}
       {recentChats.length > 0 && (
         <>
           <Box sx={{ px: 2.5, pt: 2 }}>
@@ -236,8 +226,6 @@ function ChatSidebar() {
           <Divider sx={{ my: 1 }} />
         </>
       )}
-
-      {/* Friends Section */}
       <Box sx={{ px: 2.5, pt: recentChats.length > 0 ? 0 : 2 }}>
         <Typography
           variant="overline"

@@ -1,4 +1,3 @@
-// api-service/src/routes/user.routes.js
 import express from 'express';
 import EmailPublisher from '../services/EmailPublisher.js';
 

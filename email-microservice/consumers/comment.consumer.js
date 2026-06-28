@@ -11,7 +11,7 @@ export async function commentConsumer(message) {
     commentTime
   } = message;
   
-  console.log(`💬 [Comment] ${commenterName} commented on ${recipientName}'s post`);
+  console.log(`[Comment] ${commenterName} commented on ${recipientName}'s post`);
   
   if (!to || !recipientName || !commenterName || !commentText) {
     throw new Error('Missing required fields for comment email');
@@ -27,5 +27,5 @@ export async function commentConsumer(message) {
     commentTime: commentTime || new Date().toISOString()
   });
   
-  console.log(`✅ [Comment] Notification sent to ${to}`);
+  console.log(`[Comment] Notification sent to ${to}`);
 }

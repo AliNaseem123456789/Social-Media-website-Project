@@ -11,7 +11,7 @@ export async function friendRequestConsumer(message) {
     viewAllRequestsLink
   } = message;
   
-  console.log(`👥 [Friend Request] From ${senderName} to ${recipientName}`);
+  console.log(`[Friend Request] From ${senderName} to ${recipientName}`);
   
   await emailService.sendFriendRequestEmail({
     to,
@@ -24,5 +24,5 @@ export async function friendRequestConsumer(message) {
     viewAllRequestsLink: viewAllRequestsLink || `${process.env.APP_URL}/friend-requests`
   });
   
-  console.log(`✅ [Friend Request] Notification sent to ${to}`);
+  console.log(`[Friend Request] Notification sent to ${to}`);
 }

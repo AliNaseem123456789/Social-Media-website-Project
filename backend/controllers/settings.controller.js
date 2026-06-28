@@ -5,8 +5,6 @@ export const settingsController = {
   changePassword: async (req, res) => {
     const { currentPassword, newPassword } = req.body;
     const userId = parseInt(req.session.userId);
-
-    // Validation
     if (!currentPassword || !newPassword) {
       return res.status(400).json({
         success: false,

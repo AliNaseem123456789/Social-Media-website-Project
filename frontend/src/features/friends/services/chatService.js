@@ -1,5 +1,3 @@
-// services/chatService.js - MAKE SURE NO PARAMETERS
-
 import apiClient from "../../../api/apiClient";
 import { io } from "socket.io-client";
 
@@ -13,21 +11,15 @@ export const chatService = {
   getRecipientInfo: async (userId) => {
     const res = await apiClient.get(`/users/${userId}`);
     return res.data;
-  },
-  
-  // NO parameter - server gets userId from session
+  },  
   getRecentChats: async () => {
     const response = await apiClient.get(`/recentchat`);
     return response.data;
   },
-  
-  // Only need other user's ID
   getChatHistory: async (otherUserId) => {
     const res = await apiClient.get(`/chat/${otherUserId}`);
     return res.data;
   },
-
-  // NO parameter - server gets userId from session
   registerUser: () => {
     socket.emit("register");
   },

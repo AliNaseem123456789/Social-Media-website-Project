@@ -27,18 +27,18 @@ class RabbitMQManager {
       
       // Handle errors
       this.connection.on('error', (error) => {
-        console.error('❌ RabbitMQ connection error:', error.message);
+        console.error('RabbitMQ connection error:', error.message);
       });
       
       this.isConnected = true;
-      console.log('✅ Connected to RabbitMQ');
+      console.log('Connected to RabbitMQ');
       
       // Setup dead letter exchange for failed messages
       await this.setupDeadLetterExchange();
       
       return this.channel;
     } catch (error) {
-      console.error('❌ Failed to connect to RabbitMQ:', error.message);
+      console.error('Failed to connect to RabbitMQ:', error.message);
       throw error;
     }
   }
@@ -53,24 +53,23 @@ class RabbitMQManager {
     // Bind dead letter queue to exchange
     await this.channel.bindQueue('email.failed', 'email.dead-letter', 'failed');
     
-    console.log('✅ Dead letter exchange configured');
+    console.log(' Dead letter exchange configured');
   }
 
   async reconnect() {
-    console.log('🔄 Attempting to reconnect to RabbitMQ in 5 seconds...');
+    console.log('Attempting to reconnect to RabbitMQ in 5 seconds...');
     setTimeout(async () => {
       try {
         await this.connect();
         await this.rebindConsumers();
       } catch (error) {
-        console.error('❌ Reconnection failed:', error.message);
+        console.error('Reconnection failed:', error.message);
         this.reconnect();
       }
     }, 5000);
   }
 
   async rebindConsumers() {
-    // This will be called by the main app to re-register consumers
     if (this.rebindCallback) {
       await this.rebindCallback();
     }
@@ -99,7 +98,7 @@ class RabbitMQManager {
     await this.channel.assertQueue(queueName, finalOptions);
     this.queues.add(queueName);
     
-    console.log(`📋 Queue asserted: ${queueName}`);
+    console.log(`Queue asserted: ${queueName}`);
     return queueName;
   }
 
@@ -121,18 +120,18 @@ class RabbitMQManager {
       
       try {
         const content = JSON.parse(message.content.toString());
-        console.log(`📨 Received message from ${queueName}:`, content);
+        console.log(`Received message from ${queueName}:`, content);
         
         // Call the consumer with retry logic
         await this.handleWithRetry(queueName, consumerCallback, content, message);
         
       } catch (error) {
-        console.error(`❌ Error processing message from ${queueName}:`, error.message);
+        console.error(`Error processing message from ${queueName}:`, error.message);
         await this.handleFailedMessage(queueName, message, error);
       }
     }, finalOptions);
     
-    console.log(`👂 Listening on queue: ${queueName}`);
+    console.log(`Listening on queue: ${queueName}`);
   }
 
   async handleWithRetry(queueName, consumerCallback, content, message) {
@@ -143,19 +142,18 @@ class RabbitMQManager {
       
       // Success - acknowledge the message
       this.channel.ack(message);
-      console.log(`✅ Message processed successfully from ${queueName}`);
+      console.log(`Message processed successfully from ${queueName}`);
       
     } catch (error) {
       if (retryCount < 3) {
         // Retry - reject and requeue with delay
-        console.log(`🔄 Retry ${retryCount + 1}/3 for ${queueName}`);
+        console.log(`Retry ${retryCount + 1}/3 for ${queueName}`);
         this.channel.nack(message, false, false); // Don't requeue immediately
         
         // Send to retry queue with delay
         await this.sendToRetryQueue(queueName, content, retryCount + 1, error.message);
       } else {
-        // Failed after all retries - send to dead letter
-        console.error(`💀 Max retries reached for ${queueName}, sending to dead letter`);
+        console.error(`Max retries reached for ${queueName}, sending to dead letter`);
         this.channel.nack(message, false, false);
         await this.sendToDeadLetter(queueName, content, error.message);
       }
@@ -206,7 +204,7 @@ class RabbitMQManager {
       }
     })));
     
-    console.log(`💀 Message sent to dead letter queue from ${originalQueue}`);
+    console.log(`Message sent to dead letter queue from ${originalQueue}`);
   }
 
   async publish(queueName, message) {
@@ -237,7 +235,7 @@ class RabbitMQManager {
     if (this.channel) await this.channel.close();
     if (this.connection) await this.connection.close();
     this.isConnected = false;
-    console.log('🔌 RabbitMQ connection closed');
+    console.log('RabbitMQ connection closed');
   }
 }
 

@@ -12,26 +12,20 @@ export const createCommentLoader = () => {
     if (error) {
       console.error('Error loading comments:', error);
       return postIds.map(() => []);
-    }
-    
-    // Group comments by post_id
+    }    
     const commentsByPostId = {};
     comments.forEach(comment => {
       if (!commentsByPostId[comment.post_id]) {
         commentsByPostId[comment.post_id] = [];
       }
       commentsByPostId[comment.post_id].push(comment);
-    });
-    
-    // Return in same order as requested
+    });    
     return postIds.map(id => commentsByPostId[id] || []);
   });
 };
-
-// DataLoader for users (batches by user_id)
 export const createUserLoader = () => {
   return new DataLoader(async (userIds) => {
-    console.log(`📦 Batching ${userIds.length} user IDs`);
+    console.log(`Batching ${userIds.length} user IDs`);
     
     const { data: users, error } = await supabase
       .from("users")
@@ -41,9 +35,7 @@ export const createUserLoader = () => {
     if (error) {
       console.error('Error loading users:', error);
       return userIds.map(() => null);
-    }
-    
-    // Create map for O(1) lookup
+    }    
     const userMap = {};
     users.forEach(user => {
       userMap[user.user_id] = user;
@@ -52,11 +44,9 @@ export const createUserLoader = () => {
     return userIds.map(id => userMap[id] || null);
   });
 };
-
-// DataLoader for like status (does current user like each post?)
 export const createLikeStatusLoader = (currentUserId) => {
   return new DataLoader(async (postIds) => {
-    console.log(`📦 Batching ${postIds.length} post IDs for like status`);
+    console.log(`Batching ${postIds.length} post IDs for like status`);
     
     const { data: likes, error } = await supabase
       .from("likes")
@@ -75,10 +65,9 @@ export const createLikeStatusLoader = (currentUserId) => {
   });
 };
 
-// DataLoader for comment count
 export const createCommentCountLoader = () => {
   return new DataLoader(async (postIds) => {
-    console.log(`📦 Batching ${postIds.length} post IDs for comment counts`);
+    console.log(`Batching ${postIds.length} post IDs for comment counts`);
     
     const { data: counts, error } = await supabase
       .from("comments")
@@ -90,8 +79,6 @@ export const createCommentCountLoader = () => {
       return postIds.map(() => 0);
     }
     
-    // This is simplified - you might need a proper count query
-    // Supabase doesn't support count in select directly
     const countMap = {};
     for (const postId of postIds) {
       const { count } = await supabase

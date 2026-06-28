@@ -446,9 +446,7 @@ export const getMyPosts = async (req, res) => {
         content_type: contentType,
         min_likes: minLikes
       }
-    };
-    
-    // Cache for 3 minutes
+    };    
     await redis.setex(cacheKey, 180, JSON.stringify(response));
     
     const totalTime = Date.now() - start;

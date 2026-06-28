@@ -1,5 +1,3 @@
-// pages/Profile.jsx - UPDATED
-
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Box, CircularProgress, Container, Grid, Stack } from "@mui/material";
@@ -22,15 +20,13 @@ function Profile() {
   const [isFriend, setIsFriend] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
 
-  const currentUserId = currentUser?.id; // ✅ From AuthContext
+  const currentUserId = currentUser?.id;
 
   const fetchProfileData = async () => {
     try {
       setLoading(true);
       const data = await profileService.getProfile(userId);
       setProfile(data);
-
-      // Check friendship status if viewing someone else's profile
       if (Number(userId) !== currentUserId) {
         const friends = await profileService.checkFriendship();
         setIsFriend(friends.some((f) => f.id === Number(userId)));
@@ -51,7 +47,6 @@ function Profile() {
 
   const handleSendRequest = async () => {
     try {
-      // ✅ NO requesterId needed!
       await profileService.sendFriendRequest(userId);
       setRequestSent(true);
     } catch (err) {
@@ -60,8 +55,7 @@ function Profile() {
   };
 
 const handleChat = () => {
-  // ✅ CORRECT - only pass the OTHER user's ID
-  navigate(`/chat/${userId}`);  // userId is the profile being viewed
+  navigate(`/chat/${userId}`);  
 };
 
   if (loading) {

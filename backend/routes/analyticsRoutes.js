@@ -1,26 +1,20 @@
-// routes/analyticsRoutes.js
 import express from 'express';
 import supabase from '../supabaseClient.js';
 import redisClient from '../config/redis.config.js';
 
 const router = express.Router();
-
-// ✅ GET /api/analytics/me - Get current user's analytics
 router.get('/analytics/me', async (req, res) => {
     try {
         const userId = req.session?.userId;
         if (!userId) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
-
-        console.log('📊 Fetching analytics for user:', userId);
-
-        // Try Redis cache first
+        console.log('Fetching analytics for user:', userId);
         try {
             const cached = await redisClient.get(`user_stats:${userId}`);
             if (cached) {
                 const stats = JSON.parse(cached);
-                console.log('✅ Cache hit for user:', userId);
+                console.log('Cache hit for user:', userId);
                 return res.json({ 
                     success: true, 
                     stats: {
@@ -32,10 +26,8 @@ router.get('/analytics/me', async (req, res) => {
                 });
             }
         } catch (redisError) {
-            console.log('⚠️ Redis cache miss or error:', redisError.message);
+            console.log('Redis cache miss or error:', redisError.message);
         }
-
-        // Get from database
         const { data: stats, error } = await supabase
             .from('user_stats')
             .select('*')
@@ -43,29 +35,22 @@ router.get('/analytics/me', async (req, res) => {
             .maybeSingle();
 
         if (error) {
-            console.error('❌ Failed to get user stats:', error);
+            console.error('Failed to get user stats:', error);
             return res.status(500).json({ error: 'Failed to get analytics' });
         }
-
-        // If no stats exist, calculate them
         if (!stats) {
-            console.log('📊 Calculating stats for user:', userId);
-            const statsData = await calculateUserStats(userId);
-            
-            // Save to database
+            console.log('Calculating stats for user:', userId);
+            const statsData = await calculateUserStats(userId);            
             await saveUserStats(userId, statsData);
-            
             return res.json({ 
                 success: true, 
                 stats: statsData
             });
         }
-
-        // Cache for next time
         try {
             await redisClient.set(`user_stats:${userId}`, JSON.stringify(stats), 'EX', 3600);
         } catch (redisError) {
-            console.log('⚠️ Failed to cache stats:', redisError.message);
+            console.log('Failed to cache stats:', redisError.message);
         }
 
         res.json({
@@ -79,12 +64,11 @@ router.get('/analytics/me', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Failed to get user analytics:', error);
+        console.error('Failed to get user analytics:', error);
         res.status(500).json({ error: 'Failed to get analytics' });
     }
 });
 
-// ✅ GET /api/analytics/user/:userId - Get any user's analytics
 router.get('/analytics/user/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
@@ -94,9 +78,7 @@ router.get('/analytics/user/:userId', async (req, res) => {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        console.log('📊 Fetching analytics for user:', userId, 'by user:', currentUserId);
-
-        // Try Redis cache first
+        console.log('Fetching analytics for user:', userId, 'by user:', currentUserId);
         try {
             const cached = await redisClient.get(`user_stats:${userId}`);
             if (cached) {
@@ -114,8 +96,6 @@ router.get('/analytics/user/:userId', async (req, res) => {
         } catch (redisError) {
             // Silently fall through
         }
-
-        // Get from database
         const { data: stats, error } = await supabase
             .from('user_stats')
             .select('*')
@@ -123,11 +103,9 @@ router.get('/analytics/user/:userId', async (req, res) => {
             .maybeSingle();
 
         if (error) {
-            console.error('❌ Failed to get user stats:', error);
+            console.error('Failed to get user stats:', error);
             return res.status(500).json({ error: 'Failed to get analytics' });
         }
-
-        // If no stats, calculate on the fly
         if (!stats) {
             const statsData = await calculateUserStats(userId);
             return res.json({ success: true, stats: statsData });
@@ -144,32 +122,29 @@ router.get('/analytics/user/:userId', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Failed to get user analytics:', error);
+        console.error('Failed to get user analytics:', error);
         res.status(500).json({ error: 'Failed to get analytics' });
     }
 });
 
-// ✅ Helper: Calculate user stats
 async function calculateUserStats(userId) {
     try {
-        // Count posts
         const { count: posts, error: postsError } = await supabase
             .from('posts')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', userId);
 
         if (postsError) {
-            console.error('❌ Posts count error:', postsError);
+            console.error('Posts count error:', postsError);
         }
 
-        // Count likes on user's posts
         const { data: userPosts, error: likesError } = await supabase
             .from('posts')
             .select('total_likes')
             .eq('user_id', userId);
         
         if (likesError) {
-            console.error('❌ Likes error:', likesError);
+            console.error('Likes error:', likesError);
         }
         
         const totalLikes = userPosts?.reduce((sum, p) => sum + (p.total_likes || 0), 0) || 0;
@@ -185,7 +160,7 @@ async function calculateUserStats(userId) {
             .eq('status', 'accepted');
 
         if (friendsError) {
-            console.error('❌ Friends error:', friendsError);
+            console.error('Friends error:', friendsError);
         }
 
         return {
@@ -195,7 +170,7 @@ async function calculateUserStats(userId) {
             total_friends: friends || 0
         };
     } catch (error) {
-        console.error('❌ Error calculating user stats:', error);
+        console.error('Error calculating user stats:', error);
         return {
             total_posts: 0,
             total_likes_received: 0,
@@ -204,8 +179,6 @@ async function calculateUserStats(userId) {
         };
     }
 }
-
-// ✅ Helper: Save user stats
 async function saveUserStats(userId, statsData) {
     try {
         const { error } = await supabase
@@ -222,16 +195,15 @@ async function saveUserStats(userId, statsData) {
             });
 
         if (error) {
-            console.error('❌ Failed to save user stats:', error);
+            console.error('Failed to save user stats:', error);
         } else {
-            console.log('✅ Saved stats for user:', userId);
+            console.log('Saved stats for user:', userId);
         }
     } catch (error) {
-        console.error('❌ Error saving user stats:', error);
+        console.error('Error saving user stats:', error);
     }
 }
 
-// ✅ POST /api/analytics/refresh - Force refresh user analytics
 router.post('/analytics/refresh', async (req, res) => {
     try {
         const userId = req.session?.userId;
@@ -239,15 +211,9 @@ router.post('/analytics/refresh', async (req, res) => {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        console.log('🔄 Refreshing analytics for user:', userId);
-
-        // Recalculate stats
+        console.log('Refreshing analytics for user:', userId);
         const statsData = await calculateUserStats(userId);
-
-        // Save to database
         await saveUserStats(userId, statsData);
-
-        // Update Redis cache
         try {
             await redisClient.set(
                 `user_stats:${userId}`,
@@ -256,7 +222,7 @@ router.post('/analytics/refresh', async (req, res) => {
                 3600
             );
         } catch (redisError) {
-            console.log('⚠️ Failed to cache stats:', redisError.message);
+            console.log('Failed to cache stats:', redisError.message);
         }
 
         res.json({
@@ -266,7 +232,7 @@ router.post('/analytics/refresh', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Failed to refresh analytics:', error);
+        console.error('Failed to refresh analytics:', error);
         res.status(500).json({ error: 'Failed to refresh analytics' });
     }
 });

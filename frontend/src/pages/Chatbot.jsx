@@ -34,23 +34,29 @@ import ChatIcon from "@mui/icons-material/Chat";
 import CelebrationIcon from "@mui/icons-material/Celebration";
 import axios from "axios";
 import { postService } from "../features/posts/services/postService";
+import { useAuth } from "../features/auth/context/AuthContext";
 
 const API_CONFIG = {
   dev: "http://localhost:8000",
   prod: "https://social-media-website-assistant-production.up.railway.app",
-  environment: "prod",
+  environment: "dev",
 };
+
 const getApiUrl = () => {
   return API_CONFIG[API_CONFIG.environment];
 };
+
 const apiClient = axios.create({
   baseURL: getApiUrl(),
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
 });
 
 const Chatbot = () => {
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -60,43 +66,16 @@ const Chatbot = () => {
   const [commentText, setCommentText] = useState("");
   const chatEndRef = useRef(null);
   const [hasWelcomed, setHasWelcomed] = useState(false);
-  const [currentPath, setCurrentPath] = useState(window.location.pathname);
-  
-  // Listen for navigation changes
-  useEffect(() => {
-    const handlePathChange = () => {
-      setCurrentPath(window.location.pathname);
-    };
-    
-    window.addEventListener('popstate', handlePathChange);
-    
-    const observer = new MutationObserver(() => {
-      if (window.location.pathname !== currentPath) {
-        setCurrentPath(window.location.pathname);
-      }
-    });
-    
-    observer.observe(document.getElementById('root') || document.body, {
-      childList: true,
-      subtree: true
-    });
-    
-    return () => {
-      window.removeEventListener('popstate', handlePathChange);
-      observer.disconnect();
-    };
-  }, [currentPath]);
-  
-  const userId = localStorage.getItem("user_id");
   const path = window.location.pathname;
   const isAuthPage = path === "/" || path === "/login" || path === "/signup";
-  
+  const getUserId = () => {
+    return user?.id || user?.user_id || null;
+  };
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-  
   useEffect(() => {
-    if (isOpen && !hasWelcomed) {
+    if (isOpen && !hasWelcomed && isAuthenticated) {
       setHasWelcomed(true);
       setMessages([
         {
@@ -106,12 +85,27 @@ const Chatbot = () => {
         },
       ]);
     }
-  }, [isOpen, hasWelcomed]);
+  }, [isOpen, hasWelcomed, isAuthenticated]);
+  useEffect(() => {
+    if (user) {
+      console.log("User object:", user);
+      console.log("User ID:", getUserId());
+    }
+  }, [user]);
 
-  if (!userId || isAuthPage) {
+  if (authLoading) {
+    return null;
+  }
+  if (!isAuthenticated || !user || isAuthPage) {
     return null;
   }
 
+  const userId = getUserId();
+
+  if (!userId) {
+    console.error("No user ID found!");
+    return null;
+  }
   const handleCreatePost = async (content) => {
     if (!userId) {
       alert("Please log in to post!");
@@ -119,7 +113,7 @@ const Chatbot = () => {
     }
     try {
       await postService.createPost({
-        user_id: userId,
+        user_id: String(userId),
         content: content,
         image_url: null,
       });
@@ -129,7 +123,8 @@ const Chatbot = () => {
         { text: "Post published successfully!", sender: "system" },
       ]);
     } catch (err) {
-      alert("❌ Failed to create post.");
+      console.error("Create post error:", err);
+      alert("Failed to create post.");
     }
   };
 
@@ -144,19 +139,19 @@ const Chatbot = () => {
     try {
       const res = await apiClient.post("/api/chat", {
         message: `send_to_all_${JSON.stringify(friendIds)}`,
-        user_id: userId,
+        user_id: String(userId),
       });
       
       alert(res.data.response || "Friend request sent!");
       
       setMessages((prev) => [
         ...prev,
-        { text: res.data.response, sender: "system" },
+        { text: res.data.response || "Friend request sent!", sender: "system" },
       ]);
       
     } catch (err) {
       console.error("Error sending friend request:", err);
-      alert("❌ Failed to send friend request.");
+      alert("Failed to send friend request.");
     }
   };
 
@@ -169,14 +164,14 @@ const Chatbot = () => {
     try {
       const res = await apiClient.post("/api/chat", {
         message: `like_post_${postId}`,
-        user_id: userId,
+        user_id: String(userId),
       });
       
       alert(res.data.response || "Post liked!");
       
     } catch (err) {
       console.error("Error liking post:", err);
-      alert("❌ Failed to like post.");
+      alert("Failed to like post.");
     }
   };
 
@@ -192,10 +187,15 @@ const Chatbot = () => {
       return;
     }
     
+    if (!userId) {
+      alert("Please log in to comment!");
+      return;
+    }
+    
     try {
       const res = await apiClient.post("/api/chat", {
         message: `comment_post_${selectedPost.post_id}_${commentText}`,
-        user_id: userId,
+        user_id: String(userId),
       });
       
       alert(res.data.response || "Comment added!");
@@ -204,7 +204,7 @@ const Chatbot = () => {
       
     } catch (err) {
       console.error("Error adding comment:", err);
-      alert("❌ Failed to add comment.");
+      alert("Failed to add comment.");
     }
   };
 
@@ -216,16 +216,22 @@ const Chatbot = () => {
     setInput("");
     setLoading(true);
 
+    // Build payload
+    const payload = {
+      message: input.trim(),
+      user_id: String(userId),
+    };
+
+    console.log("Sending payload:", payload);
+
     try {
-      const res = await apiClient.post("/api/chat", {
-        message: input,
-        user_id: userId,
-      });
+      const res = await apiClient.post("/api/chat", payload);
+      console.log("Response:", res.data);
 
       setMessages((prev) => [
         ...prev,
         {
-          text: res.data.response,
+          text: res.data.response || "I processed your request.",
           sender: "ai",
           suggestion: res.data.post_suggestion,
           friendSuggestions: res.data.friend_suggestions,
@@ -237,11 +243,22 @@ const Chatbot = () => {
         },
       ]);
     } catch (err) {
-      console.error("Chat Error:", err);
+      console.error("❌ Chat Error Details:", {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        config: err.config,
+      });
+      
+      // Show detailed error
+      const errorMsg = err.response?.data?.detail || 
+                      err.response?.data?.message || 
+                      "Sorry, I'm having trouble connecting. Please try again later.";
+      
       setMessages((prev) => [
         ...prev,
         {
-          text: " Sorry, I'm having trouble connecting. Please try again later.",
+          text: ` ${errorMsg}`,
           sender: "ai",
         },
       ]);
@@ -249,6 +266,8 @@ const Chatbot = () => {
       setLoading(false);
     }
   };
+
+  // ============ COMPONENTS ============
 
   const FeatureList = () => (
     <Box sx={{ mt: 1, width: "100%" }}>
@@ -304,8 +323,11 @@ const Chatbot = () => {
     </Box>
   );
 
+  // ============ RENDER ============
+
   return (
     <>
+      {/* Floating Action Button */}
       <Zoom in={!isOpen}>
         <Fab
           color="primary"
@@ -323,6 +345,8 @@ const Chatbot = () => {
           <ForumIcon />
         </Fab>
       </Zoom>
+
+      {/* Chat Window */}
       <Zoom in={isOpen}>
         <Paper
           elevation={10}
@@ -340,6 +364,7 @@ const Chatbot = () => {
             boxShadow: "0 10px 40px rgba(0,0,0,0.25)",
           }}
         >
+          {/* Header */}
           <Box
             sx={{
               p: 2,
@@ -372,6 +397,8 @@ const Chatbot = () => {
               </IconButton>
             </Stack>
           </Box>
+
+          {/* Messages */}
           <List
             sx={{ flexGrow: 1, overflow: "auto", p: 2, bgcolor: "#f5f5f5" }}
           >
@@ -647,6 +674,8 @@ const Chatbot = () => {
             )}
             <div ref={chatEndRef} />
           </List>
+
+          {/* Input Area */}
           <Box sx={{ p: 2, borderTop: "1px solid #ddd", bgcolor: "white" }}>
             <Stack direction="row" spacing={1}>
               <TextField
@@ -674,6 +703,8 @@ const Chatbot = () => {
                 <SendIcon />
               </IconButton>
             </Stack>
+            
+            {/* Quick Action Chips */}
             <Stack
               direction="row"
               spacing={1}
@@ -685,7 +716,7 @@ const Chatbot = () => {
                 variant="outlined"
                 onClick={() => {
                   setInput("What can you help me with?");
-                  handleSend();
+                  setTimeout(handleSend, 100);
                 }}
                 sx={{ fontSize: "0.7rem" }}
               />
@@ -695,7 +726,7 @@ const Chatbot = () => {
                 variant="outlined"
                 onClick={() => {
                   setInput("Suggest friends who like hiking");
-                  handleSend();
+                  setTimeout(handleSend, 100);
                 }}
                 sx={{ fontSize: "0.7rem" }}
               />
@@ -705,7 +736,7 @@ const Chatbot = () => {
                 variant="outlined"
                 onClick={() => {
                   setInput("What should I like?");
-                  handleSend();
+                  setTimeout(handleSend, 100);
                 }}
                 sx={{ fontSize: "0.7rem" }}
               />
@@ -715,7 +746,7 @@ const Chatbot = () => {
                 variant="outlined"
                 onClick={() => {
                   setInput("Any birthdays coming up?");
-                  handleSend();
+                  setTimeout(handleSend, 100);
                 }}
                 sx={{ fontSize: "0.7rem" }}
               />

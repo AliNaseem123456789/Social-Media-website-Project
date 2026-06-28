@@ -2,20 +2,17 @@
 
 import React from "react";
 import { Navigate, Outlet } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";  // ✅ CHANGE: Use useAuth
+import { useAuth } from "../context/AuthContext";  
 
 const ProtectedRoute = () => {
-  const { isAuthenticated, loading } = useAuth();  // ✅ CHANGE: Get from context
+  const { isAuthenticated, loading } = useAuth();  
 
   if (loading) {
-    return <div>Loading...</div>; // Or a spinner
+    return <div>Loading...</div>; 
   }
-
-  // ✅ CHANGE: Use isAuthenticated from context, not localStorage
   if (!isAuthenticated) {
     return <Navigate to="/" replace />;
   }
-
   return <Outlet />;
 };
 

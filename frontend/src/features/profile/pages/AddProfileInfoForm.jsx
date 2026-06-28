@@ -1,5 +1,3 @@
-// features/profile/pages/AddProfileInfoForm.jsx - UPDATED WITH SESSION AUTH
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -32,12 +30,8 @@ const style = {
 };
 
 function AddProfileInfoForm({ open, handleClose, userId: propUserId, onSaved }) {
-  const navigate = useNavigate();
-  
-  // ✅ Get current user from AuthContext
-  const { user: currentUser, isAuthenticated } = useAuth();
-  
-  // ✅ Use propUserId if provided (for viewing other profiles), otherwise use current user
+  const navigate = useNavigate();  
+  const { user: currentUser, isAuthenticated } = useAuth();  
   const userId = propUserId || currentUser?.id;
   
   const [formData, setFormData] = useState({
@@ -102,10 +96,7 @@ function AddProfileInfoForm({ open, handleClose, userId: propUserId, onSaved }) 
     setError("");
     
     try {
-      const data = new FormData();
-      // ✅ NO user_id needed! Server gets from session cookie
-      // ❌ REMOVED: data.append("user_id", userId);
-      
+      const data = new FormData();      
       Object.keys(formData).forEach((key) => {
         if (formData[key]) {
           data.append(key, formData[key]);
@@ -130,8 +121,6 @@ function AddProfileInfoForm({ open, handleClose, userId: propUserId, onSaved }) 
       setLoading(false);
     }
   };
-
-  // Only show modal if authenticated
   if (!isAuthenticated) {
     return null;
   }
@@ -238,5 +227,4 @@ function AddProfileInfoForm({ open, handleClose, userId: propUserId, onSaved }) 
     </Modal>
   );
 }
-
 export default AddProfileInfoForm;

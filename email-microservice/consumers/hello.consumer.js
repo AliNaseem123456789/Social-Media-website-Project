@@ -1,9 +1,9 @@
 import emailService from '../services/email.service.js';
 
 export async function helloEmailConsumer(data) {
-  console.log(`📧 Processing hello email request`);
-  console.log(`   To: ${data.to}`);
-  console.log(`   Name: ${data.name || 'Not provided'}`);
+  console.log(`Processing hello email request`);
+  console.log(`To: ${data.to}`);
+  console.log(`Name: ${data.name || 'Not provided'}`);
   
   await emailService.sendHelloEmail({
     to: data.to,
@@ -11,5 +11,5 @@ export async function helloEmailConsumer(data) {
     message: data.message
   });
   
-  console.log(`✅ Hello email sent successfully`);
+  console.log(`Hello email sent successfully`);
 }

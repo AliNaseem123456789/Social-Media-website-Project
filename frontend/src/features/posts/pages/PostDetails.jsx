@@ -1,5 +1,3 @@
-// features/posts/pages/PostDetails.jsx - UPDATED
-
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Sidebar from "../../../components/Sidebar";
@@ -23,9 +21,7 @@ import SendRoundedIcon from "@mui/icons-material/SendRounded";
 
 function PostDetails() {
   const { id } = useParams();
-  const navigate = useNavigate();
-  
-  // ✅ Get user from AuthContext
+  const navigate = useNavigate();  
   const { user: currentUser, isAuthenticated } = useAuth();
   const userId = currentUser?.id;
   const username = currentUser?.username;
@@ -48,8 +44,6 @@ function PostDetails() {
     };
     if (id) loadPost();
   }, [id]);
-
-  // ✅ Add comment - NO userId parameter needed
   const handleAddComment = async () => {
     if (!newComment.trim() || !isAuthenticated) return;
     setPosting(true);
@@ -66,8 +60,6 @@ function PostDetails() {
       setPosting(false);
     }
   };
-
-  // ✅ Like post - NO userId parameter needed
   const handleLike = async (postId) => {
     try {
       const res = await postService.likePost(postId);

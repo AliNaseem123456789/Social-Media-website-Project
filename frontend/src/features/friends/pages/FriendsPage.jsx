@@ -1,5 +1,3 @@
-// pages/FriendsPage.jsx - UPDATED WITH SESSION AUTH
-
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -19,12 +17,11 @@ import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import ChatBubbleRoundedIcon from "@mui/icons-material/ChatBubbleRounded";
 import AccountCircleRoundedIcon from "@mui/icons-material/AccountCircleRounded";
 import { useNavigate } from "react-router-dom";
-import { friendService } from "../services/friendsService"; // ✅ Make sure this is the updated service
-import { useAuth } from "../../auth/context/AuthContext";// ✅ Import useAuth
+import { friendService } from "../services/friendsService"; 
+import { useAuth } from "../../auth/context/AuthContext";
 import Sidebar from "../../../components/Sidebar";
 
 function FriendsPage() {
-  // ✅ Get current user from AuthContext, NOT localStorage!
   const { user: currentUser } = useAuth();
   const currentUserId = currentUser?.id;
   
@@ -36,10 +33,7 @@ function FriendsPage() {
   useEffect(() => {
     const fetchFriends = async () => {
       try {
-        // ✅ NO userId parameter needed! Server gets from session
         const data = await friendService.getFriends();
-        // The response structure might be { success: true, friends: [...] }
-        // Adjust based on your actual response
         setFriends(data.friends || data);
       } catch (error) {
         console.error("Error fetching friends:", error);
@@ -47,8 +41,6 @@ function FriendsPage() {
         setLoading(false);
       }
     };
-
-    // ✅ Only fetch if user is authenticated
     if (currentUserId) {
       fetchFriends();
     }

@@ -5,7 +5,6 @@ const TEST_USER_ID = '48';  // Your actual user ID from login
 const TEST_POST_ID = '1';    // Change to a real post ID that exists
 const REQUESTS_PER_ENDPOINT = 10;
 
-// Your working credentials
 const TEST_USER = {
     email: 'test@gmail.com',
     password: 'test12345'

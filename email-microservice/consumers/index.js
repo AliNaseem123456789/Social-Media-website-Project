@@ -25,11 +25,11 @@ export async function setupAllConsumers() {
     await rabbitmq.consume(consumer.queue, consumer.handler);
   }
   
-  console.log(`✅ Registered ${consumers.length} email consumers`);
+  console.log(`Registered ${consumers.length} email consumers`);
   
   // Set rebind callback for reconnection
   rabbitmq.setRebindCallback(async () => {
-    console.log('🔄 Rebinding all consumers...');
+    console.log('Rebinding all consumers...');
     await setupAllConsumers();
   });
 } // { queue: 'email.weekly-digest', handler: weeklyDigestConsumer },

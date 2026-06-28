@@ -1,4 +1,3 @@
-// features/posts/pages/MyPosts.jsx
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../../components/Sidebar";
@@ -218,7 +217,6 @@ function MyPosts() {
     >
       <Sidebar />
       <Container maxWidth="sm" sx={{ py: 10 }}>
-        {/* Header with Sort and Filter Buttons */}
         <Stack 
           direction="row" 
           justifyContent="space-between" 
@@ -253,7 +251,6 @@ function MyPosts() {
           </Stack>
         </Stack>
 
-        {/* Active Filters Chips */}
         {activeFiltersCount > 0 && (
           <Stack direction="row" spacing={1} sx={{ mb: 3, flexWrap: 'wrap', gap: 1 }}>
             {timeFilter !== 'all' && (
@@ -280,7 +277,6 @@ function MyPosts() {
           </Stack>
         )}
 
-        {/* Sort Menu */}
         <Menu
           anchorEl={sortAnchorEl}
           open={Boolean(sortAnchorEl)}
@@ -303,7 +299,6 @@ function MyPosts() {
           ))}
         </Menu>
 
-        {/* Filter Drawer */}
         <Drawer
           anchor="bottom"
           open={showFilters}

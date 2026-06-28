@@ -92,8 +92,6 @@ class SNSPublisher {
             }
         );
     }
-
-    // ============ User Events ============
     async publishUserSignup(userData) {
         return this.publish(
             TOPICS.USERS,
@@ -106,7 +104,6 @@ class SNSPublisher {
         );
     }
 
-    // ============ Follow Events ============
     async publishUserFollowed(followData) {
         return this.publish(
             TOPICS.FOLLOWS,

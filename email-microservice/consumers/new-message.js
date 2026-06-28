@@ -28,5 +28,5 @@ export async function newMessageConsumer(message) {
     isFirstMessage: isFirstMessage || false
   });
   
-  console.log(`✅ [New Message] Notification sent to ${to}`);
+  console.log(`[New Message] Notification sent to ${to}`);
 }

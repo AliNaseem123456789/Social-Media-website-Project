@@ -1,4 +1,3 @@
-// Feed.jsx
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -96,18 +95,16 @@ function Feed() {
     
     try {
       let result;
-      
-      // Determine which feed to load based on tab
       switch(tabValue) {
-        case 0: // For You - ranked feed
+        case 0: 
           result = await postService.getForYouFeed(10, cursor);
           setFeedTitle("For You");
           break;
-        case 1: // Friends Feed - ranked feed (same as for you but different label)
+        case 1: 
           result = await postService.getFeed(10, cursor);
           setFeedTitle("Friends Feed");
           break;
-        case 2: // Latest - chronological feed
+        case 2: 
           result = await postService.getForYouFeed(10, cursor);
           setFeedTitle("Latest");
           break;

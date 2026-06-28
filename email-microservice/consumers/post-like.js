@@ -11,7 +11,7 @@ export async function postLikeConsumer(message) {
     isFirstLike
   } = message;
   
-  console.log(`❤️ [Post Like] ${likerName} liked ${recipientName}'s post`);
+  console.log(`[Post Like] ${likerName} liked ${recipientName}'s post`);
   
   await emailService.sendPostLikeEmail({
     to,
@@ -24,5 +24,5 @@ export async function postLikeConsumer(message) {
     isFirstLike: isFirstLike || false
   });
   
-  console.log(`✅ [Post Like] Notification sent to ${to}`);
+  console.log(`[Post Like] Notification sent to ${to}`);
 }

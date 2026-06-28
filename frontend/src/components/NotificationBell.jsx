@@ -1,3 +1,4 @@
+// NotificationBell.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { useSocket } from "../context/socketContext";
 import {
@@ -30,6 +31,8 @@ import {
 } from "@mui/icons-material";
 import { styled } from "@mui/material/styles";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import apiClient from "../api/apiClient"; 
+
 // Styled components
 const StyledBadge = styled(Badge)(({ theme }) => ({
   "& .MuiBadge-badge": {
@@ -78,13 +81,8 @@ const NotificationBell = () => {
   useEffect(() => {
     const fetchUnreadCount = async () => {
       try {
-        const response = await fetch("/api/notifications/unread-count", {
-          credentials: "include",
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setUnreadCount(data.count);
-        }
+        const response = await apiClient.get("/notifications/unread-count");
+        setUnreadCount(response.data.count);
       } catch (error) {
         console.error("Failed to fetch unread count:", error);
       }
@@ -99,62 +97,55 @@ const NotificationBell = () => {
     };
   }, [setUnreadCount]);
 
- const fetchNotifications = async () => {
-  try {
-    setLoading(true);
-    const response = await fetch("http://localhost:5000/api/notifications", {
-      credentials: "include",
-    });
-    console.log("Status:", response.status);
-    const data = await response.json();
-    console.log("Notifications raw data:", data);
-    setNotifications(data);
-  } catch (error) {
-    console.error("Failed to fetch notifications:", error);
-  } finally {
-    setLoading(false);
-    isFirstLoad.current = false;
-  }
-};
+  // ✅ Updated fetchNotifications to use apiClient
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+      const response = await apiClient.get("/notifications");
+      console.log("Notifications response:", response.data);
+      setNotifications(response.data);
+    } catch (error) {
+      console.error("Failed to fetch notifications:", error);
+    } finally {
+      setLoading(false);
+      isFirstLoad.current = false;
+    }
+  };
+
   const handleOpen = (event) => {
     setAnchorEl(event.currentTarget);
     setIsOpen(true);
   };
+
   const handleClose = () => {
     setAnchorEl(null);
     setIsOpen(false);
   };
+
+  // ✅ Updated handleMarkAsRead to use apiClient
   const handleMarkAsRead = async (notificationId) => {
     try {
-      const response = await fetch(`/api/notifications/${notificationId}/read`, {
-        method: "PUT",
-        credentials: "include",
-      });
-      if (response.ok) {
-        setNotifications((prev) =>
-          prev.map((n) =>
-            n.id === notificationId ? { ...n, read: true } : n
-          )
-        );
-        setUnreadCount((prev) => Math.max(0, prev - 1));
-      }
+      await apiClient.put(`/notifications/${notificationId}/read`);
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n.id === notificationId ? { ...n, read: true } : n
+        )
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
       console.error("Failed to mark as read:", error);
     }
   };
+
+  // ✅ Updated handleMarkAllAsRead to use apiClient
   const handleMarkAllAsRead = async () => {
     try {
       setMarkingAll(true);
-      const response = await fetch("/api/notifications/read-all", {
-        method: "PUT",
-        credentials: "include",
-      });
-      if (response.ok) {
-        setNotifications((prev) =>
-          prev.map((n) => ({ ...n, read: true }))
-        );
-        setUnreadCount(0);
-      }
+      await apiClient.put("/notifications/read-all");
+      setNotifications((prev) =>
+        prev.map((n) => ({ ...n, read: true }))
+      );
+      setUnreadCount(0);
     } catch (error) {
       console.error("Failed to mark all as read:", error);
     } finally {

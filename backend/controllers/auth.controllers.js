@@ -1,5 +1,3 @@
-// controllers/auth.controller.js - UPDATED WITH SESSIONS
-
 import bcrypt from "bcrypt";
 import supabase from "../supabaseClient.js";
 import { OAuth2Client } from "google-auth-library";
@@ -178,15 +176,15 @@ export const getCurrentUser = async (req, res) => {
     try {
         const userId = parseInt(req.session.userId);
         
-        console.log("🔍 Auth check for user ID:", userId);        
+        console.log("Auth check for user ID:", userId);        
         const { data: user, error } = await supabase
             .from("users")
-            .select("id, username, email, created_at")  // ← Only these exist in 'users'
+            .select("id, username, email, created_at") 
             .eq("id", userId)
             .single();
         
         if (error || !user) {
-            console.error("❌ User not found in auth table:", error);
+            console.error("User not found in auth table:", error);
             return res.status(404).json({
                 success: false,
                 message: "User not found"

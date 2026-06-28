@@ -5,8 +5,6 @@ export function Footer() {
   return (
     <footer className="footer bg-white py-12 px-6 border-t border-slate-100 flex flex-col items-center gap-6">
       <p className="text-slate-500 text-sm">© 2026 YourAppName</p>
-
-      {/* Internal Links use 'Link to' */}
       <div className="footer-links flex gap-6 text-sm font-medium text-slate-600">
         <Link to="/about" className="hover:text-[#CE978C] transition-colors">
           About

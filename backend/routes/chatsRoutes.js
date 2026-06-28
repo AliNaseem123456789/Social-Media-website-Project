@@ -1,5 +1,3 @@
-// routes/chatsRoutes.js - UPDATE
-
 import express from "express";
 import {
   getUserById,

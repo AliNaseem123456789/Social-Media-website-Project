@@ -35,10 +35,6 @@ class RedisClient {
             return false;
         }
     }
-
-    // FIXED: Returns the actual value, not wrapped
-    // config/redis.config.js - COMPLETELY FIXED VERSION
-
 async get(key) {
     if (!this.isConnected) return null;
     try {
@@ -47,10 +43,8 @@ async get(key) {
             url: `${this.restUrl}/get/${key}`,
             headers: { 'Authorization': `Bearer ${this.restToken}` }
         });
-        
-        if (response.data.result === null) return null;
-        
-        // Parse the result - it's a JSON string
+    
+        if (response.data.result === null) return null;        
         let parsed;
         try {
             parsed = JSON.parse(response.data.result);
@@ -81,7 +75,7 @@ async set(key, value, ttlSeconds = 300) {
             }
         });
         
-        console.log('📤 Store response:', response.data);
+        console.log('Store response:', response.data);
         return response.data.result === 'OK';
     } catch (error) {
         console.error('SET error:', error.message);
@@ -133,7 +127,7 @@ async set(key, value, ttlSeconds = 300) {
                 data: {},
                 headers: { 'Authorization': `Bearer ${this.restToken}` }
             });
-            console.log('🗑️ Redis FLUSHALL executed');
+            console.log('Redis FLUSHALL executed');
             return true;
         } catch (error) {
             console.error('FLUSHALL error:', error.message);
@@ -145,13 +139,11 @@ async set(key, value, ttlSeconds = 300) {
         return await this.set(key, userData, ttlSeconds);
     }
 
-    // Get session data
+
     async getSession(sessionId) {
         const key = `session:${sessionId}`;
         return await this.get(key);
     }
-
-    // Delete session
     async deleteSession(sessionId) {
         const key = `session:${sessionId}`;
         return await this.del(key);

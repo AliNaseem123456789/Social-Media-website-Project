@@ -16,7 +16,7 @@ export async function dailyReminderConsumer(message) {
     trendingPosts
   } = message;
   
-  console.log(`📊 [Daily Reminder] For ${to}`);
+  console.log(`[Daily Reminder] For ${to}`);
   
   await emailService.sendDailyReminderEmail({
     to,
@@ -33,5 +33,5 @@ export async function dailyReminderConsumer(message) {
     trendingPosts: trendingPosts || []
   });
   
-  console.log(`✅ [Daily Reminder] Sent to ${to}`);
+  console.log(`[Daily Reminder] Sent to ${to}`);
 }

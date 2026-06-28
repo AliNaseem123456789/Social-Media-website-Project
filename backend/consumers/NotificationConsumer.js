@@ -16,8 +16,8 @@ class NotificationConsumer {
     }
 
     async start() {
-        console.log('🔔 Notification Consumer started...');
-        console.log(`📬 Listening to: ${this.queueUrl}`);
+        console.log('Notification Consumer started...');
+        console.log(`Listening to: ${this.queueUrl}`);
         
         while (this.running) {
             try {
@@ -32,7 +32,7 @@ class NotificationConsumer {
                 const messages = response.Messages || [];
 
                 if (messages.length > 0) {
-                    console.log(`📥 Received ${messages.length} notification messages`);
+                    console.log(`Received ${messages.length} notification messages`);
                     
                     for (const message of messages) {
                         await this.processMessage(message);
@@ -41,7 +41,7 @@ class NotificationConsumer {
                 }
 
             } catch (error) {
-                console.error('❌ Notification Consumer error:', error);
+                console.error('Notification Consumer error:', error);
                 await new Promise(resolve => setTimeout(resolve, 5000));
             }
         }
@@ -50,11 +50,9 @@ class NotificationConsumer {
     async processMessage(message) {
         try {
             const data = JSON.parse(message.Body);
-            console.log('🔔 Processing notification:', data);
+            console.log('Processing notification:', data);
 
             const { type, recipientId, actorId, actorName, postId } = data;
-
-            // 1. Save notification to database
             const notification = await this.saveNotification({
                 userId: recipientId,
                 type: type.toLowerCase(),
@@ -64,7 +62,6 @@ class NotificationConsumer {
                 content: this.generateNotificationContent(type, actorName, postId)
             });
 
-            // 2. Emit via Socket.IO
             if (this.io) {
                 const room = `user_${recipientId}`;
                 this.io.to(room).emit('new_notification', {
@@ -74,7 +71,6 @@ class NotificationConsumer {
                 console.log(`Emitted notification to room: ${room}`);
             }
 
-            // 3. Update unread count
             await this.updateUnreadCount(recipientId);
 
             return { success: true, notification };
@@ -104,7 +100,7 @@ class NotificationConsumer {
             .single();
 
         if (error) {
-            console.error('❌ Failed to save notification:', error);
+            console.error('Failed to save notification:', error);
             throw error;
         }
 

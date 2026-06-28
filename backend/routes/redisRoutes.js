@@ -9,8 +9,6 @@ import {
 } from '../controllers/redis.controller.js';
 
 const router = express.Router();
-
-// Routes (all public, no authentication required)
 router.get('/stats', getRedisStats);
 router.get('/keys', getRedisStorage);
 router.get('/keys/:key', getRedisStorage);

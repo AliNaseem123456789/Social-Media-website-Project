@@ -1,9 +1,4 @@
 #!/bin/bash
-
-# ========================================
-# DEPLOYMENT SCRIPT FOR ALL SERVICES
-# ========================================
-
 set -e  # Exit on error
 
 # Colors for output
@@ -95,7 +90,7 @@ if [ -f "${PROJECT_DIR}/backend/.env" ]; then
     echo "Using ${PROJECT_DIR}/backend/.env"
     
     # Read env file and pass variables explicitly
-    source "${PROJECT_DIR}/backend/.env"
+    source "${PROJECT_DIR}/apps/.env"
     
     docker run -d \
         --name backend-main \

@@ -1,4 +1,3 @@
-// workers/feed-worker.js
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -154,11 +153,9 @@ class FeedWorker {
                 
                 // Engagement score with weights
                 const engagementScore = 
-                    (likes * 1) +      // 1 point per like
-                    (comments * 2) +   // 2 points per comment
-                    (shares * 3);      // 3 points per share
-                
-                // Final score with time decay
+                    (likes * 1) +     
+                    (comments * 2) +   
+                    (shares * 3);                      
                 const finalScore = engagementScore * timeDecay;
                 
                 return {
@@ -171,27 +168,19 @@ class FeedWorker {
                     engagementScore: engagementScore
                 };
             });
-            // STEP 2: Sort by score (highest first)
             scoredPosts.sort((a, b) => b.score - a.score);
-            // STEP 3: Apply diversity boost (prevent one person dominating)
             const diversifiedPosts = this.applyDiversityBoost(scoredPosts);
-            // STEP 4: Take top 50
             const topPosts = diversifiedPosts.slice(0, 50);
             console.log(`Top 5 posts by score:`);
             topPosts.slice(0, 5).forEach((p, i) => {
                 console.log(`  ${i+1}. Post ${p.post_id} by ${p.users?.username || 'Unknown'}: score=${p.score.toFixed(2)} (likes: ${p.likes}, comments: ${p.comments}, decay: ${p.timeDecay.toFixed(2)})`);
             });
-            // STEP 5: Transform and store in Redis
             const feedPosts = await this.transformPosts(topPosts, userId);            
-            // Add score to each post for debugging
             const feedPostsWithScore = feedPosts.map((post, index) => ({
                 ...post,
                 score: topPosts[index]?.score || 0
             }));
-
-            const cacheKey = `feed:precomputed:${userId}`;
-            
-            // Store with metadata
+            const cacheKey = `feed:precomputed:${userId}`;            
             await redis.setex(cacheKey, 3600, JSON.stringify({
                 edges: feedPostsWithScore,
                 updatedAt: new Date().toISOString(),
@@ -200,8 +189,6 @@ class FeedWorker {
                 rankedBy: 'engagement_score',
                 algorithm: 'engagement_v2'
             }));
-
-            // STEP 6: Store sorted set by score for pagination
             const sortedKey = `feed:sorted:${userId}`;
             const pipeline = redis.pipeline();
             pipeline.del(sortedKey);

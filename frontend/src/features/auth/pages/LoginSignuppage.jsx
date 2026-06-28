@@ -6,7 +6,7 @@ import { Features } from "../../../components/LandingPage/Features";
 import { HowItWorks } from "../../../components/LandingPage/HowItWorks";
 import { Hero } from "../../../components/LandingPage/Hero";
 import { Testimonials } from "../../../components/LandingPage/Testimonials";
-// import Navbar from "./Navbar";
+
 
 function LoginSignuppage() {
   const [openLogin, setOpenLogin] = useState(false);

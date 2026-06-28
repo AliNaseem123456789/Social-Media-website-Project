@@ -25,17 +25,17 @@ class EventOrchestrator {
         const missing = requiredEnvVars.filter(varName => !process.env[varName]);
         
         if (missing.length > 0) {
-            console.warn('⚠️ AWS SQS/SNS not fully configured. Missing:', missing.join(', '));
-            console.warn('⚠️ Only RabbitMQ emails will work for now.');
+            console.warn('AWS SQS/SNS not fully configured. Missing:', missing.join(', '));
+            console.warn('Only RabbitMQ emails will work for now.');
             return false;
         }
         
-        console.log('✅ AWS SQS/SNS configured');
+        console.log('AWS SQS/SNS configured');
         return true;
     }
 
     async onPostLiked(postId, postOwnerId, likerId, likerName, postOwnerEmail, postOwnerName) {
-        console.log('🔔 onPostLiked called with:', {
+        console.log('onPostLiked called with:', {
             postId,
             postOwnerId,
             likerId,
@@ -50,19 +50,18 @@ class EventOrchestrator {
             email: null
         };
 
-        // 1️⃣ SNS: Broadcast (only if configured)
+        // SNS: Broadcast (only if configured)
         if (this.isAWSConfigured) {
             try {
-                // ✅ FIX: Pass as object, not individual parameters
                 results.sns = await this.sns.publishPostLiked({
                     postId: postId,
                     userId: postOwnerId,
                     likerId: likerId,
                     likerName: likerName
                 });
-                console.log('✅ SNS event published');
+                console.log('SNS event published');
             } catch (error) {
-                console.error('❌ SNS failed:', error.message);
+                console.error('SNS failed:', error.message);
                 results.sns = { success: false, error: error.message };
             }
             try {
@@ -72,13 +71,12 @@ class EventOrchestrator {
                 userId: postData.userId,
                 timestamp: Date.now()
             });
-            console.log('✅ Feed update queued');
+            console.log('Feed update queued');
         } catch (error) {
-            console.error('❌ Feed queue failed:', error.message);
+            console.error('Feed queue failed:', error.message);
             results.feed = { success: false, error: error.message };
         }
 
-            // 2️⃣ SQS: Notification queue (only if configured)
             try {
                 results.sqs = await this.sqs.sendToNotificationQueue({
                     type: 'LIKE',
@@ -87,13 +85,12 @@ class EventOrchestrator {
                     actorName: likerName,
                     postId: postId
                 });
-                console.log('✅ SQS notification queued');
+                console.log('SQS notification queued');
             } catch (error) {
-                console.error('❌ SQS failed:', error.message);
+                console.error('SQS failed:', error.message);
                 results.sqs = { success: false, error: error.message };
             }
 
-            // 3️⃣ SQS: Analytics (only if configured)
             try {
                 results.sqsAnalytics = await this.sqs.sendToAnalyticsQueue({
                     event: 'POST_LIKED',
@@ -103,18 +100,16 @@ class EventOrchestrator {
                         postOwnerId: postOwnerId
                     }
                 });
-                console.log('✅ SQS analytics queued');
+                console.log('SQS analytics queued');
             } catch (error) {
-                console.error('❌ SQS analytics failed:', error.message);
+                console.error('SQS analytics failed:', error.message);
                 results.sqsAnalytics = { success: false, error: error.message };
             }
         } else {
-            console.log('ℹ️ AWS SQS/SNS skipped (not configured)');
+            console.log('AWS SQS/SNS skipped (not configured)');
             results.sns = { success: false, skipped: true, reason: 'AWS not configured' };
             results.sqs = { success: false, skipped: true, reason: 'AWS not configured' };
         }
-
-        // 4️⃣ RabbitMQ: Email notification (ALWAYS works)
         if (postOwnerEmail && postOwnerName) {
             try {
                 results.email = await this.email.sendPostLikeEmail({
@@ -123,9 +118,9 @@ class EventOrchestrator {
                     likerName: likerName,
                     postLink: `${process.env.APP_URL || 'http://localhost:3000'}/posts/${postId}`
                 });
-                console.log('✅ RabbitMQ email queued');
+                console.log('RabbitMQ email queued');
             } catch (error) {
-                console.error('❌ RabbitMQ email failed:', error.message);
+                console.error('RabbitMQ email failed:', error.message);
                 results.email = { success: false, error: error.message };
             }
         }
@@ -135,18 +130,14 @@ class EventOrchestrator {
             results
         };
     }
-
-    // ============ Comment Events ============
     async onCommentAdded(commentData) {
-        console.log('🔔 onCommentAdded called with:', commentData);
+        console.log('onCommentAdded called with:', commentData);
 
         const results = {
             sns: null,
             sqs: null,
             email: null
         };
-
-        // 1️⃣ SNS: Broadcast comment
         if (this.isAWSConfigured) {
             try {
                 results.sns = await this.sns.publishCommentAdded({
@@ -156,13 +147,11 @@ class EventOrchestrator {
                     content: commentData.content,
                     username: commentData.username
                 });
-                console.log('✅ SNS comment event published');
+                console.log('SNS comment event published');
             } catch (error) {
-                console.error('❌ SNS failed:', error.message);
+                console.error('SNS failed:', error.message);
                 results.sns = { success: false, error: error.message };
             }
-
-            // 2️⃣ SQS: Notification
             try {
                 results.sqs = await this.sqs.sendToNotificationQueue({
                     type: 'COMMENT',
@@ -171,14 +160,13 @@ class EventOrchestrator {
                     actorName: commentData.username,
                     postId: commentData.postId
                 });
-                console.log('✅ SQS notification queued');
+                console.log('SQS notification queued');
             } catch (error) {
-                console.error('❌ SQS failed:', error.message);
+                console.error('SQS failed:', error.message);
                 results.sqs = { success: false, error: error.message };
             }
         }
 
-        // 3️⃣ RabbitMQ: Email notification
         if (commentData.postOwnerEmail && commentData.postOwnerName) {
             try {
                 results.email = await this.email.sendCommentNotification({
@@ -189,9 +177,9 @@ class EventOrchestrator {
                     postLink: `${process.env.APP_URL || 'http://localhost:3000'}/posts/${commentData.postId}`,
                     postPreview: commentData.postPreview || ''
                 });
-                console.log('✅ RabbitMQ email queued');
+                console.log('RabbitMQ email queued');
             } catch (error) {
-                console.error('❌ RabbitMQ email failed:', error.message);
+                console.error('RabbitMQ email failed:', error.message);
                 results.email = { success: false, error: error.message };
             }
         }
@@ -201,10 +189,8 @@ class EventOrchestrator {
             results
         };
     }
-
-    // ============ User Signup ============
     async onUserSignup(userData) {
-        console.log('🔔 onUserSignup called with:', userData);
+        console.log('onUserSignup called with:', userData);
 
         const results = {
             sns: null,
@@ -219,9 +205,9 @@ class EventOrchestrator {
                     email: userData.email,
                     username: userData.username
                 });
-                console.log('✅ SNS user signup published');
+                console.log('SNS user signup published');
             } catch (error) {
-                console.error('❌ SNS failed:', error.message);
+                console.error('SNS failed:', error.message);
                 results.sns = { success: false, error: error.message };
             }
 
@@ -230,9 +216,9 @@ class EventOrchestrator {
                     userId: userData.id,
                     interests: userData.interests || []
                 });
-                console.log('✅ SQS recommendation queued');
+                console.log('SQS recommendation queued');
             } catch (error) {
-                console.error('❌ SQS failed:', error.message);
+                console.error('SQS failed:', error.message);
                 results.sqs = { success: false, error: error.message };
             }
         }
@@ -243,9 +229,9 @@ class EventOrchestrator {
                 name: userData.username,
                 profileSetupLink: userData.verificationLink
             });
-            console.log('✅ RabbitMQ welcome email queued');
+            console.log('RabbitMQ welcome email queued');
         } catch (error) {
-            console.error('❌ RabbitMQ email failed:', error.message);
+            console.error('RabbitMQ email failed:', error.message);
             results.email = { success: false, error: error.message };
         }
 
@@ -257,7 +243,7 @@ class EventOrchestrator {
 
     //friend 
     async onFriendAccepted(userId1, userId2) {
-    console.log('🤝 onFriendAccepted called with:', { userId1, userId2 });
+    console.log('onFriendAccepted called with:', { userId1, userId2 });
 
     const results = {
         feed: null
@@ -272,18 +258,17 @@ class EventOrchestrator {
                 friendId: userId2,
                 timestamp: Date.now()
             });
-            console.log('✅ Feed update queued for friend acceptance');
+            console.log('Feed update queued for friend acceptance');
         } catch (error) {
-            console.error('❌ Feed queue failed:', error.message);
+            console.error('Feed queue failed:', error.message);
             results.feed = { success: false, error: error.message };
         }
     }
 
     return { success: true, results };
 }
-    // ============ Follow Events ============
     async onUserFollowed(followerId, followingId, followerName) {
-        console.log('🔔 onUserFollowed called with:', {
+        console.log('onUserFollowed called with:', {
             followerId,
             followingId,
             followerName
@@ -301,9 +286,9 @@ class EventOrchestrator {
                     followingId: followingId,
                     followerName: followerName
                 });
-                console.log('✅ SNS follow event published');
+                console.log('SNS follow event published');
             } catch (error) {
-                console.error('❌ SNS failed:', error.message);
+                console.error('SNS failed:', error.message);
                 results.sns = { success: false, error: error.message };
             }
 
@@ -312,9 +297,9 @@ class EventOrchestrator {
                     userId: followingId,
                     followerId: followerId
                 });
-                console.log('✅ SQS feed queued');
+                console.log('SQS feed queued');
             } catch (error) {
-                console.error('❌ SQS failed:', error.message);
+                console.error('SQS failed:', error.message);
                 results.sqs = { success: false, error: error.message };
             }
         }

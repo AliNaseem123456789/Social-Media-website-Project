@@ -14,9 +14,7 @@ export const sendFriendRequest = async (req, res) => {
             success: false, 
             message: "Recipient ID required" 
         });
-    }
-    
-    // Don't allow sending request to yourself
+    }    
     if (requester_id === recipient_id) {
         return res.status(400).json({ 
             success: false, 
@@ -25,7 +23,6 @@ export const sendFriendRequest = async (req, res) => {
     }
     
     try {
-        // Check if friend request already exists
         const { data: existing } = await supabase
             .from("friends")
             .select("*")

@@ -1,7 +1,6 @@
 import supabase from "../supabaseClient.js";
 import Redis from "ioredis";
 const redis = new Redis("rediss://default:gQAAAAAAAffMAAIgcDJlNzNmNzUxZDVhNDk0MGJlYjdkNDVhNjQ1MDU5Y2U4ZQ@humorous-troll-128972.upstash.io:6379");
-// const redis = new Redis("redis://localhost:6379");
 export const getUserById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -94,15 +93,11 @@ export const getRecentChats = async (req, res) => {
       .in("id", partnerIds);
 
     if (usersError) throw usersError;
-
-    // Build result
     let result = users.map((u) => ({
       id: u.id,
       username: u.username,
       last_chatted: uniquePartners[u.id],
     }));
-
-    // Sort by most recent
     result.sort((a, b) => new Date(b.last_chatted) - new Date(a.last_chatted));
     await redis.setex(cacheKey, 60, JSON.stringify(result));
     console.log(`Recent chats cached for user ${userId} (60 sec TTL)`);

@@ -1,4 +1,3 @@
-// routes/notificationRoutes.js
 import express from 'express';
 import supabase from '../supabaseClient.js';
 
@@ -34,16 +33,12 @@ router.get('/notifications/unread-count', async (req, res) => {
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
-
-    // Try Redis first
     const redis = await import('../config/redis.config.js');
     const cachedCount = await redis.default.get(`unread_count:${userId}`);
     
     if (cachedCount !== null) {
       return res.json({ count: parseInt(cachedCount) });
     }
-
-    // Fallback to database
     const { count, error } = await supabase
       .from('notifications')
       .select('*', { count: 'exact', head: true })
@@ -51,8 +46,6 @@ router.get('/notifications/unread-count', async (req, res) => {
       .eq('read', false);
 
     if (error) throw error;
-
-    // Cache in Redis
     await redis.default.set(`unread_count:${userId}`, count || 0);
 
     res.json({ count: count || 0 });
@@ -61,7 +54,6 @@ router.get('/notifications/unread-count', async (req, res) => {
     res.status(500).json({ error: 'Failed to get unread count' });
   }
 });
-// Mark notification as read
 router.put('/notifications/:id/read', async (req, res) => {
   try {
     const userId = req.session?.userId;
@@ -97,8 +89,6 @@ router.put('/notifications/:id/read', async (req, res) => {
     res.status(500).json({ error: 'Failed to mark as read' });
   }
 });
-
-// Mark all notifications as read
 router.put('/notifications/read-all', async (req, res) => {
   try {
     const userId = req.session?.userId;

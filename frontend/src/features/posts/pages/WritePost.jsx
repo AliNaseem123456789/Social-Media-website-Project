@@ -1,5 +1,3 @@
-// features/posts/pages/WritePost.jsx - UPDATED
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -20,9 +18,7 @@ import { postService } from "../services/postService";
 import { useAuth } from "../../auth/context/AuthContext";
 
 function WritePost() {
-  const navigate = useNavigate();
-  
-  // ✅ Get user from AuthContext
+  const navigate = useNavigate();  
   const { user: currentUser, isAuthenticated } = useAuth();
   
   const [content, setContent] = useState("");
@@ -31,7 +27,6 @@ function WritePost() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Redirect if not authenticated
   if (!isAuthenticated) {
     navigate("/login");
     return null;
@@ -65,9 +60,7 @@ function WritePost() {
       let image_url = "";
       if (imageFile) {
         image_url = await postService.uploadImage(imageFile);
-      }
-      
-      // ✅ NO userId parameter! Server gets from session
+      }      
       const res = await postService.createPost({
         content: content,
         image_url: image_url,

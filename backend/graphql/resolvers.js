@@ -88,21 +88,17 @@ export const resolvers = {
             console.log('getChronologicalFeed called:', { userId, first, after });
             
             if (!userId) {
-                console.log('❌ No userId found');
+                console.log('No userId found');
                 return { edges: [], pageInfo: { hasNextPage: false, endCursor: null } };
             }
             
-            const cacheKey = `feed:chronological:${userId}:limit:${validLimit}:cursor:${after || 'start'}`;
-            
-            // Try Redis cache first
+            const cacheKey = `feed:chronological:${userId}:limit:${validLimit}:cursor:${after || 'start'}`;            
             try {
                 const cached = await redis.get(cacheKey);
                 if (cached) {
                     const parsed = JSON.parse(cached);
                     if (parsed.edges?.length > 0) {
-                        console.log('✅ Chronological feed cache hit');
-                        
-                        // Hydrate liked status fresh
+                        console.log('Chronological feed cache hit');                        
                         const postIds = parsed.edges.map(e => e.node.post_id);
                         const { data: userLikes } = await supabase
                             .from("likes")
@@ -126,7 +122,6 @@ export const resolvers = {
                 console.log('Redis cache error:', err.message);
             }
             
-            // Get friends of the user
             const { data: friends, error: friendsError } = await supabase
                 .from('friends')
                 .select('requester_id, recipient_id')
@@ -134,22 +129,18 @@ export const resolvers = {
                 .eq('status', 'accepted');
 
             if (friendsError) {
-                console.error('❌ Friends error:', friendsError);
+                console.error('Friends error:', friendsError);
                 return { edges: [], pageInfo: { hasNextPage: false, endCursor: null } };
             }
-
-            // Extract friend IDs
             const friendIds = friends.map(f => 
                 f.requester_id === userId ? f.recipient_id : f.requester_id
             );
 
-            console.log(`👥 User ${userId} has ${friendIds.length} friends`);
+            console.log(`User ${userId} has ${friendIds.length} friends`);
 
             if (friendIds.length === 0) {
                 return { edges: [], pageInfo: { hasNextPage: false, endCursor: null } };
             }
-
-            // ✅ ORIGINAL WORKING QUERY - Chronological order
             let query = supabase
                 .from("posts")
                 .select(`
@@ -171,7 +162,7 @@ export const resolvers = {
             const { data: posts, error } = await query;
 
             if (error) {
-                console.error('❌ Supabase error:', error);
+                console.error('Supabase error:', error);
                 return { edges: [], pageInfo: { hasNextPage: false, endCursor: null } };
             }
             
@@ -189,8 +180,6 @@ export const resolvers = {
                 const lastPost = resultPosts[resultPosts.length - 1];
                 endCursor = Buffer.from(lastPost.created_at).toString('base64');
             }
-
-            // Fetch liked status
             const postIds = resultPosts.map(p => p.post_id);
             let likedSet = new Set();
 
@@ -242,9 +231,7 @@ export const resolvers = {
             const response = {
                 edges,
                 pageInfo: { hasNextPage, endCursor }
-            };
-            
-            // Cache chronological feed
+            };            
             if (edges.length > 0 && edges[0].node.username !== "Unknown User") {
                 try {
                     const cacheResponse = {
@@ -263,31 +250,24 @@ export const resolvers = {
             return response;
         },
  
-      // graphql/resolvers.js
-
-// Add this new resolver inside Query
 getGlobalFeed: async (_, { first = 10, after }, { supabase, redis, loaders, currentUser }) => {
     const userId = currentUser?.user_id;
     const validLimit = Math.min(first, 50);
     
-    console.log('📊 getGlobalFeed called:', { userId, first, after });
+    console.log('getGlobalFeed called:', { userId, first, after });
     
     if (!userId) {
-        console.log('❌ No userId found');
+        console.log('No userId found');
         return { edges: [], pageInfo: { hasNextPage: false, endCursor: null } };
     }
     
-    const cacheKey = `feed:global:${userId}:limit:${validLimit}:cursor:${after || 'start'}`;
-    
-    // Try Redis cache first
+    const cacheKey = `feed:global:${userId}:limit:${validLimit}:cursor:${after || 'start'}`;    
     try {
         const cached = await redis.get(cacheKey);
         if (cached) {
             const parsed = JSON.parse(cached);
             if (parsed.edges?.length > 0) {
-                console.log('✅ Global feed cache hit');
-                
-                // Hydrate liked status fresh
+                console.log('Global feed cache hit');                
                 const postIds = parsed.edges.map(e => e.node.post_id);
                 const { data: userLikes } = await supabase
                     .from("likes")
@@ -310,9 +290,6 @@ getGlobalFeed: async (_, { first = 10, after }, { supabase, redis, loaders, curr
     } catch (err) {
         console.log('Redis cache error:', err.message);
     }
-    
-    // ✅ Query ALL posts (not just from friends) - chronological for now
-    // Later you can add scoring for "For You"
     let query = supabase
         .from("posts")
         .select(`
@@ -333,7 +310,7 @@ getGlobalFeed: async (_, { first = 10, after }, { supabase, redis, loaders, curr
     const { data: posts, error } = await query;
 
     if (error) {
-        console.error('❌ Supabase error:', error);
+        console.error('Supabase error:', error);
         return { edges: [], pageInfo: { hasNextPage: false, endCursor: null } };
     }
     
@@ -351,8 +328,6 @@ getGlobalFeed: async (_, { first = 10, after }, { supabase, redis, loaders, curr
         const lastPost = resultPosts[resultPosts.length - 1];
         endCursor = Buffer.from(lastPost.created_at).toString('base64');
     }
-
-    // Fetch liked status
     const postIds = resultPosts.map(p => p.post_id);
     let likedSet = new Set();
 
@@ -404,9 +379,7 @@ getGlobalFeed: async (_, { first = 10, after }, { supabase, redis, loaders, curr
     const response = {
         edges,
         pageInfo: { hasNextPage, endCursor }
-    };
-    
-    // Cache global feed
+    };    
     if (edges.length > 0) {
         try {
             const cacheResponse = {

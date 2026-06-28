@@ -48,7 +48,7 @@ export default function App() {
           <Route path="/videocall" element={<VideoCall />} />
           <Route path="/search" element={<SearchResults />} />
           
-          {/* <Route path="/chatbot" element={<Chatbot />} /> */}
+          <Route path="/chatbot" element={<Chatbot />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

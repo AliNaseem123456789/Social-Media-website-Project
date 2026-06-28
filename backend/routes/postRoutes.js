@@ -1,5 +1,3 @@
-// routes/postRoutes.js - UPDATED
-
 import express from "express";
 import multer from "multer"; 
 import { uploadPostImage } from '../controllers/upload.controller.js';
@@ -34,11 +32,8 @@ const upload = multer({
   }
 });
 
-// Public routes (no auth needed for viewing)
 router.get("/", getPosts);
 router.get("/fullpost/:id", getFullPost);
-
-// Protected routes (require authentication)
 router.post("/", requireAuth, createPost);
 router.post("/like", requireAuth, likePost);
 router.post("/comment", requireAuth, addComment);

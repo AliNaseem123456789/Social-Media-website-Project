@@ -1,5 +1,3 @@
-// ChatPage.jsx - COMPLETE WORKING VERSION
-
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -331,8 +329,6 @@ function ChatPage() {
                   </IconButton>
                 </Stack>
               </Box>
-
-              {/* Messages Area */}
               <Box
                 sx={{
                   flexGrow: 1,
@@ -427,8 +423,6 @@ function ChatPage() {
                   <div ref={messagesEndRef} />
                 </Box>
               </Box>
-
-              {/* Input Area */}
               <Box sx={{ p: "12px 24px", bgcolor: "#f0f2f5" }}>
                 <Stack
                   direction="row"
@@ -487,8 +481,6 @@ function ChatPage() {
           </Grid>
         </Paper>
       </Box>
-
-      {/* Video Call Dialog */}
       <Dialog
         open={isVideoCallOpen}
         onClose={endVideoCall}
