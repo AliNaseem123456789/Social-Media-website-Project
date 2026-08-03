@@ -13,35 +13,32 @@ export const AuthProvider = ({ children }) => {
   // Check session on app load
   const checkAuth = async () => {
     try {
-      console.log("🔍 Checking authentication...");
+      console.log("Checking authentication...");
       const response = await apiClient.get("/me");
       
       if (response.data.success && response.data.user) {
         setUser(response.data.user);
         setIsAuthenticated(true);
-        console.log("✅ User authenticated:", response.data.user.username);
+        console.log("User authenticated:", response.data.user.username);
       } else {
         setUser(null);
         setIsAuthenticated(false);
-        console.log("❌ No active session");
+        console.log("No active session");
       }
     } catch (error) {
-      console.error("❌ Auth check failed:", error.message);
+      console.error("Auth check failed:", error.message);
       setUser(null);
       setIsAuthenticated(false);
     } finally {
       setLoading(false);
     }
   };
-
-  // Login - NO localStorage!
   const login = async (email, password) => {
     try {
       const response = await apiClient.post("/login", { email, password });
       
       if (response.data.success) {
-        // ✅ NO localStorage.setItem!
-        await checkAuth(); // Reload user data from session
+        await checkAuth(); 
         return { success: true, user: response.data.user };
       }
       return { success: false, message: response.data.message };
@@ -54,13 +51,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Signup - Auto-login
   const signup = async (username, email, password) => {
     try {
       const response = await apiClient.post("/signup", { username, email, password });
       
       if (response.data.success) {
-        await checkAuth(); // Auto-login after signup
+        await checkAuth(); 
         return { success: true, user: response.data.user };
       }
       return { success: false, message: response.data.message };
@@ -72,8 +68,6 @@ export const AuthProvider = ({ children }) => {
       };
     }
   };
-
-  // Google Login
   const googleLogin = async (credential) => {
     try {
       const response = await apiClient.post("/google", { token: credential });
@@ -96,13 +90,10 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
-      // ✅ NO localStorage.clear() needed!
       setUser(null);
       setIsAuthenticated(false);
     }
   };
-
-  // Check auth on app start
   useEffect(() => {
     checkAuth();
   }, []);

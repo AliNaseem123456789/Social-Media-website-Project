@@ -1,12 +1,13 @@
-// controllers/auth.controller.js - UPDATED WITH SESSIONS
-
 import bcrypt from "bcrypt";
 import supabase from "../supabaseClient.js";
 import { OAuth2Client } from "google-auth-library";
 import EmailPublisher from "../services/EmailPublisher.js";
 import { createSession, destroySession } from "../middleware/session.middleware.js";
+import Redis from "ioredis";
 
+const redis = new Redis("rediss://default:gQAAAAAAAffMAAIgcDJlNzNmNzUxZDVhNDk0MGJlYjdkNDVhNjQ1MDU5Y2U4ZQ@humorous-troll-128972.upstash.io:6379");
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
 export const login = async (req, res) => {
     const { email, password } = req.body;
     
@@ -42,19 +43,30 @@ export const login = async (req, res) => {
                 message: "Invalid credentials" 
             });
         }
+        
+        // Check onboarding status
+        const { data: profile } = await supabase
+            .from("user_profiles")
+            .select("onboarding_completed")
+            .eq("user_id", user.id)
+            .maybeSingle();
+        
         createSession(req, {
             id: user.id,
             username: user.username,
             email: user.email,
             role: user.role || 'user'
         });
+        
         res.json({
             success: true,
             message: "Login successful",
             user: {
                 id: user.id,
                 username: user.username,
-                email: user.email
+                email: user.email,
+                role: user.role || 'user',
+                onboardingCompleted: profile?.onboarding_completed ?? false
             }
         });
         
@@ -63,6 +75,7 @@ export const login = async (req, res) => {
         res.status(500).json({ success: false, message: "Server error" });
     }
 };
+
 export const signup = async (req, res) => {
     const { username, email, password } = req.body;
 
@@ -83,7 +96,18 @@ export const signup = async (req, res) => {
             .single();
             
         if (error) throw error;
-            createSession(req, {
+        
+        // Create user_profiles entry
+        await supabase
+            .from("user_profiles")
+            .insert([{ 
+                user_id: user.id, 
+                onboarding_completed: false 
+            }])
+            .select()
+            .single();
+        
+        createSession(req, {
             id: user.id,
             username: user.username,
             email: user.email,
@@ -104,7 +128,8 @@ export const signup = async (req, res) => {
             user: {
                 id: user.id,
                 username: user.username,
-                email: user.email
+                email: user.email,
+                onboardingCompleted: false
             }
         });
         
@@ -113,6 +138,7 @@ export const signup = async (req, res) => {
         res.status(500).json({ success: false, message: "Database error" });
     }
 };
+
 export const googleLogin = async (req, res) => {
     const { token } = req.body;
     
@@ -145,20 +171,34 @@ export const googleLogin = async (req, res) => {
                 
             if (insertError) throw insertError;
             user = data;
+            
+            // Create user_profiles entry for new Google users
+            await supabase
+                .from("user_profiles")
+                .insert([{ 
+                    user_id: user.id, 
+                    onboarding_completed: false 
+                }])
+                .select()
+                .single();
         }
+        
         createSession(req, {
             id: user.id,
             username: user.username,
             email: user.email,
             role: user.role || 'user'
         });
+        
         res.json({
             success: true,
             message: "Google login successful",
             user: {
                 id: user.id,
                 username: user.username,
-                email: user.email
+                email: user.email,
+                role: user.role || 'user',
+                onboardingCompleted: false
             }
         });
         
@@ -167,6 +207,7 @@ export const googleLogin = async (req, res) => {
         res.status(401).json({ success: false, message: "Google login failed" });
     }
 };
+
 export const getCurrentUser = async (req, res) => {
     if (!req.session || !req.session.userId) {
         return res.status(401).json({
@@ -177,29 +218,56 @@ export const getCurrentUser = async (req, res) => {
     
     try {
         const userId = parseInt(req.session.userId);
+        console.log("Auth check for user ID:", userId);
         
-        console.log("🔍 Auth check for user ID:", userId);        
+        const cacheKey = `user:${userId}`;
+        const cachedUser = await redis.get(cacheKey);
+        
+        if (cachedUser) {
+            console.log(`User cache HIT for ${userId}`);
+            const userData = JSON.parse(cachedUser);
+            return res.json({
+                success: true,
+                user: userData
+            });
+        }
+        
+        console.log(`User cache MISS for ${userId}, fetching from database...`);
+        
         const { data: user, error } = await supabase
             .from("users")
-            .select("id, username, email, created_at")  // ← Only these exist in 'users'
+            .select("id, username, email, created_at") 
             .eq("id", userId)
             .single();
         
         if (error || !user) {
-            console.error("❌ User not found in auth table:", error);
+            console.error("User not found in auth table:", error);
             return res.status(404).json({
                 success: false,
                 message: "User not found"
             });
         }
-            res.json({
+        
+        const { data: profile } = await supabase
+            .from("user_profiles")
+            .select("onboarding_completed")
+            .eq("user_id", userId)
+            .maybeSingle();
+
+        const userData = {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            createdAt: user.created_at,
+            onboardingCompleted: profile?.onboarding_completed ?? false,
+        };
+        
+        await redis.setex(cacheKey, 3600, JSON.stringify(userData));
+        console.log(`✅ User cached for ${userId} (1 hour TTL)`);
+        
+        res.json({
             success: true,
-            user: {
-                id: user.id,
-                username: user.username,
-                email: user.email,
-                createdAt: user.created_at
-            }
+            user: userData
         });
         
     } catch (err) {
@@ -207,6 +275,7 @@ export const getCurrentUser = async (req, res) => {
         res.status(500).json({ success: false, message: "Server error" });
     }
 };
+
 export const logout = async (req, res) => {
     await destroySession(req, res);
     res.json({ 

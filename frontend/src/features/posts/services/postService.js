@@ -193,4 +193,31 @@ getForYouFeed: async (first = 10, after = null) => {
     const response = await apiClient.post("/posts", postData);
     return response.data;
   },
+  getLikedPosts: async (cursor = null, limit = 10, sort = 'recent', time = 'all', minLikes = 0) => {
+  let url = `/posts/liked?limit=${limit}&sort=${sort}&time=${time}&min_likes=${minLikes}`;
+  if (cursor) {
+    url += `&cursor=${encodeURIComponent(cursor)}`;
+  }
+  const response = await apiClient.get(url);
+  if (response.data && response.data.data) {
+    return response.data;
+  }
+  return response.data;
+},
+// Edit post
+editPost: async (postId, postData) => {
+  const response = await apiClient.put(`/posts/${postId}`, postData);
+  return response.data;
+},
+
+// Delete post
+deletePost: async (postId) => {
+  const response = await apiClient.delete(`/posts/${postId}`);
+  return response.data;
+},
+
+togglePinPost: async (postId) => {
+  const response = await apiClient.put(`/posts/${postId}/pin`);
+  return response.data;
+},
 };

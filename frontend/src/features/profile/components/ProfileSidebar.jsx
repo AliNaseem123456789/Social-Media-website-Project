@@ -1,111 +1,104 @@
-import {
-  Paper,
-  Typography,
-  Grid,
-  Box,
-  Stack,
-  Chip,
-  Divider,
-} from "@mui/material";
-import PublicIcon from "@mui/icons-material/Public";
-import SchoolIcon from "@mui/icons-material/School";
-import WcIcon from "@mui/icons-material/Wc";
-import CakeIcon from "@mui/icons-material/Cake";
+// Place at: src/features/profile/components/ProfileSidebar.jsx
 import React from "react";
-const InfoTile = ({ icon, label, value }) => (
-  <Grid item xs={6}>
+import { Paper, Typography, Box, Stack, Chip } from "@mui/material";
+import WcRoundedIcon from "@mui/icons-material/WcRounded";
+import CakeRoundedIcon from "@mui/icons-material/CakeRounded";
+import PublicRoundedIcon from "@mui/icons-material/PublicRounded";
+import SchoolRoundedIcon from "@mui/icons-material/SchoolRounded";
+import { T, cardSx } from "../../../styles/circleTokens";
+
+const InfoRow = ({ icon, label, value, isLast }) => (
+  <Stack
+    direction="row"
+    spacing={1.5}
+    alignItems="center"
+    sx={{ py: 1.5, borderBottom: isLast ? "none" : `1px solid ${T.line}` }}
+  >
     <Box
       sx={{
-        p: 1.5,
-        borderRadius: "16px",
-        bgcolor: "#f9fafb",
-        border: "1px solid #f1f3f5",
+        width: 34,
+        height: 34,
+        borderRadius: "10px",
+        bgcolor: T.emberTint,
+        color: T.emberInk,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
       }}
     >
-      <Stack
-        direction="row"
-        spacing={1}
-        alignItems="center"
-        sx={{ color: "primary.main", mb: 0.5 }}
+      {icon}
+    </Box>
+    <Box sx={{ minWidth: 0 }}>
+      <Typography
+        sx={{
+          fontFamily: T.fontMono,
+          fontSize: 10.5,
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
+          color: T.inkFaint,
+          display: "block",
+        }}
       >
-        {React.cloneElement(icon, { fontSize: "small" })}
-        <Typography variant="caption" fontWeight={700} color="text.secondary">
-          {label}
-        </Typography>
-      </Stack>
-      <Typography variant="body2" fontWeight={600}>
-        {value || "Not Set"}
+        {label}
+      </Typography>
+      <Typography sx={{ fontSize: 14, fontWeight: 600, color: value ? T.ink : T.inkFaint }}>
+        {value || "Not set"}
       </Typography>
     </Box>
-  </Grid>
+  </Stack>
 );
 
 const ProfileSidebar = ({ profile }) => {
+  const hobbies = profile.hobbies?.split(",").map((h) => h.trim()).filter(Boolean) || [];
+  const rows = [
+    { icon: <PublicRoundedIcon sx={{ fontSize: 17 }} />, label: "Location", value: profile.country },
+    { icon: <SchoolRoundedIcon sx={{ fontSize: 17 }} />, label: "Education", value: profile.education },
+    { icon: <WcRoundedIcon sx={{ fontSize: 17 }} />, label: "Gender", value: profile.gender },
+    { icon: <CakeRoundedIcon sx={{ fontSize: 17 }} />, label: "Age", value: profile.age ? `${profile.age} years old` : null },
+  ];
+
   return (
-    <Stack spacing={3}>
-      {/* About Section */}
-      <Paper
-        elevation={0}
-        sx={{ p: 3, borderRadius: 6, border: "1px solid #f0f0f0" }}
-      >
-        <Typography variant="subtitle1" fontWeight={800} gutterBottom>
-          About Me
-        </Typography>
+    <Stack spacing={2.5}>
+      <Paper elevation={0} sx={{ ...cardSx, p: 3 }}>
         <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ lineHeight: 1.7 }}
+          sx={{ fontFamily: T.fontDisplay, fontWeight: 600, fontSize: 17, color: T.ink, mb: 0.5 }}
         >
-          {profile.bio || "No biography provided yet."}
+          Intro
         </Typography>
-
-        <Divider sx={{ my: 3 }} />
-
-        {/* Info Grid */}
-        <Grid container spacing={2}>
-          <InfoTile
-            icon={<PublicIcon />}
-            label="Location"
-            value={profile.country}
-          />
-          <InfoTile
-            icon={<SchoolIcon />}
-            label="Education"
-            value={profile.education}
-          />
-          <InfoTile icon={<WcIcon />} label="Gender" value={profile.gender} />
-          <InfoTile
-            icon={<CakeIcon />}
-            label="Age"
-            value={profile.age ? `${profile.age} yrs` : null}
-          />
-        </Grid>
+        <Box sx={{ mt: 1 }}>
+          {rows.map((row, i) => (
+            <InfoRow key={row.label} {...row} isLast={i === rows.length - 1} />
+          ))}
+        </Box>
       </Paper>
 
-      {/* Hobbies Section */}
-      <Paper
-        elevation={0}
-        sx={{ p: 3, borderRadius: 6, border: "1px solid #f0f0f0" }}
-      >
-        <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 2 }}>
+      <Paper elevation={0} sx={{ ...cardSx, p: 3 }}>
+        <Typography sx={{ fontFamily: T.fontDisplay, fontWeight: 600, fontSize: 17, color: T.ink, mb: 2 }}>
           Interests
         </Typography>
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-          {profile.hobbies?.split(",").map((hobby, i) => (
-            <Chip
-              key={i}
-              label={hobby.trim()}
-              size="small"
-              sx={{
-                borderRadius: "8px",
-                fontWeight: 600,
-                bgcolor: "#fff",
-                border: "1px solid #e0e0e0",
-                "&:hover": { bgcolor: "#f0f2f5" },
-              }}
-            />
-          )) || <Typography variant="caption">No interests listed</Typography>}
-        </Box>
+        {hobbies.length > 0 ? (
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+            {hobbies.map((hobby, i) => (
+              <Chip
+                key={i}
+                label={hobby}
+                size="small"
+                sx={{
+                  borderRadius: "8px",
+                  fontWeight: 600,
+                  fontSize: 12.5,
+                  color: T.emberInk,
+                  bgcolor: T.emberTint,
+                  border: "none",
+                  "&:hover": { bgcolor: "#f6d4c4" },
+                }}
+              />
+            ))}
+          </Box>
+        ) : (
+          <Typography sx={{ fontSize: 13, color: T.inkFaint }}>No interests listed yet</Typography>
+        )}
       </Paper>
     </Stack>
   );

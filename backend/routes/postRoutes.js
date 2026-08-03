@@ -1,5 +1,3 @@
-// routes/postRoutes.js - UPDATED
-
 import express from "express";
 import multer from "multer"; 
 import { uploadPostImage } from '../controllers/upload.controller.js';
@@ -10,6 +8,10 @@ import {
   getFullPost,
   addComment,
   getMyPosts,
+  getLikedPosts,
+  editPost,
+  deletePost,
+  togglePinPost
 } from "../controllers/post.controller.js";
 import { requireAuth } from "../middleware/session.middleware.js";
 
@@ -34,15 +36,15 @@ const upload = multer({
   }
 });
 
-// Public routes (no auth needed for viewing)
 router.get("/", getPosts);
 router.get("/fullpost/:id", getFullPost);
-
-// Protected routes (require authentication)
 router.post("/", requireAuth, createPost);
 router.post("/like", requireAuth, likePost);
 router.post("/comment", requireAuth, addComment);
 router.get("/myposts", requireAuth, getMyPosts);  
 router.post('/upload', requireAuth, upload.single('image'), uploadPostImage);
-
+router.get("/liked", getLikedPosts);
+router.put("/:post_id", editPost);
+router.delete("/:post_id", deletePost);
+router.put("/:post_id/pin", togglePinPost);
 export default router;

@@ -1,4 +1,3 @@
-// backend/routes/settingsRoutes.js
 import express from "express";
 import multer from "multer";
 import { settingsController } from "../controllers/settingsController.js";
@@ -17,7 +16,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ 
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  limits: { fileSize: 5 * 1024 * 1024 }, 
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif/;
     const extname = allowedTypes.test(file.originalname.toLowerCase());
@@ -31,8 +30,7 @@ const upload = multer({
   }
 });
 
-// All routes require authentication
-// router.use(requireAuth);
+router.use(requireAuth);
 
 router.get("/profile", settingsController.getProfile);
 router.post("/profile/update", upload.fields([

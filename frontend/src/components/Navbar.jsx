@@ -14,48 +14,33 @@ import {
   Avatar,
   ListItemText,
   Container,
+  GlobalStyles,
 } from "@mui/material";
-import { styled, alpha } from "@mui/material/styles";
-import SearchIcon from "@mui/icons-material/Search";
 import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
 import AddCircleRoundedIcon from "@mui/icons-material/AddCircleRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
+import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import { searchService } from "../features/search/services/SearchService";
 import NotificationBell from "./NotificationBell";
-// Modern Search Styling
-const Search = styled("div")(({ theme }) => ({
-  position: "relative",
-  borderRadius: "12px",
-  backgroundColor: "#f0f2f5",
-  transition: "all 0.3s ease",
-  "&:hover": {
-    backgroundColor: "#e4e6e9",
-  },
-  marginRight: theme.spacing(2),
-  width: "100%",
-  [theme.breakpoints.up("sm")]: {
-    width: "28ch",
-  },
-}));
 
-const SearchIconWrapper = styled("div")(({ theme }) => ({
-  padding: theme.spacing(0, 2),
-  height: "100%",
-  position: "absolute",
-  display: "flex",
-  alignItems: "center",
-  color: "#65676b",
-}));
-
-const StyledInputBase = styled(InputBase)(({ theme }) => ({
-  color: "#1c1e21",
-  width: "100%",
-  "& .MuiInputBase-input": {
-    padding: theme.spacing(1, 1, 1, 0),
-    paddingLeft: `calc(1em + ${theme.spacing(4)})`,
-    fontSize: "0.95rem",
-  },
-}));
+/* ---------------------------------------------------------------------
+   Circle brand tokens — identical to landing.css / FriendsPage / WritePost
+   so the app shell doesn't shift identity between the marketing site and
+   the logged-in product.
+   ------------------------------------------------------------------ */
+const T = {
+  paper: "#faf8f4",
+  surface: "#ffffff",
+  ink: "#16140f",
+  inkSoft: "#58534a",
+  inkFaint: "#948d80",
+  line: "#e7e1d5",
+  ember: "#e0431f",
+  emberInk: "#7c2410",
+  emberTint: "#fce6dd",
+  fontDisplay: `"Fraunces", "Iowan Old Style", serif`,
+  fontBody: `"Inter", -apple-system, BlinkMacSystemFont, sans-serif`,
+};
 
 function Navbar() {
   const navigate = useNavigate();
@@ -65,7 +50,6 @@ function Navbar() {
 
   useEffect(() => {
     const fetchUsers = async () => {
-      // Don't search if query is empty or too short
       if (!query || query.trim().length < 2) {
         setResults([]);
         return;
@@ -104,54 +88,100 @@ function Navbar() {
       position="sticky"
       elevation={0}
       sx={{
-        bgcolor: "rgba(255, 255, 255, 0.8)",
-        backdropFilter: "blur(10px)",
-        borderBottom: "1px solid rgba(0, 0, 0, 0.05)",
+        bgcolor: "rgba(250, 248, 244, 0.86)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+        borderBottom: `1px solid ${T.line}`,
         zIndex: 1201,
+        fontFamily: T.fontBody,
       }}
     >
+      <GlobalStyles
+        styles={{
+          "@import":
+            "url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700&family=Inter:wght@400;500;600;700;800&display=swap')",
+        }}
+      />
       <Container maxWidth="lg">
-        <Toolbar disableGutters sx={{ justifyContent: "space-between" }}>
+        <Toolbar disableGutters sx={{ justifyContent: "space-between", minHeight: "64px !important" }}>
           {/* 1. Left Section: Logo & Search */}
           <Box sx={{ display: "flex", alignItems: "center" }}>
-            <Typography
-              variant="h5"
+            <Box
+              component={Link}
+              to="/home"
               sx={{
-                fontWeight: 900,
-                color: "#1877f2",
+                display: { xs: "none", md: "flex" },
+                alignItems: "center",
+                gap: 1,
                 mr: 3,
-                letterSpacing: "-1.5px",
-                display: { xs: "none", md: "block" },
+                textDecoration: "none",
               }}
             >
-              Social
-            </Typography>
+              <Box
+                sx={{
+                  width: 11,
+                  height: 11,
+                  borderRadius: "3px",
+                  bgcolor: T.ember,
+                  transform: "rotate(45deg)",
+                  flexShrink: 0,
+                }}
+              />
+              <Typography
+                sx={{
+                  fontFamily: T.fontDisplay,
+                  fontWeight: 600,
+                  fontSize: "1.4rem",
+                  letterSpacing: "-0.01em",
+                  color: T.ink,
+                }}
+              >
+                Circle
+              </Typography>
+            </Box>
 
             <Box sx={{ position: "relative" }}>
-              <Search>
-                <SearchIconWrapper>
-                  <SearchIcon />
-                </SearchIconWrapper>
-                <StyledInputBase
-                  placeholder="Search network..."
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  bgcolor: T.paper,
+                  border: `1px solid ${T.line}`,
+                  borderRadius: "999px",
+                  px: 2,
+                  py: 0.9,
+                  width: { xs: "auto", sm: "26ch" },
+                  transition: "border-color 0.18s ease, box-shadow 0.18s ease",
+                  "&:focus-within": {
+                    borderColor: T.ink,
+                    boxShadow: `0 0 0 3px ${T.emberTint}`,
+                  },
+                }}
+              >
+                <SearchRoundedIcon sx={{ color: T.inkFaint, fontSize: 19, mr: 1 }} />
+                <InputBase
+                  placeholder="Search network"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  onKeyPress={handleSearch}
+                  onKeyDown={handleSearch}
+                  sx={{ fontSize: "0.9rem", fontFamily: T.fontBody, color: T.ink, width: "100%" }}
                 />
-              </Search>
+              </Box>
 
-              {/* Search Results Dropdown */}
               {results.length > 0 && (
                 <Paper
-                  elevation={4}
+                  elevation={0}
                   sx={{
                     position: "absolute",
                     top: "50px",
                     left: 0,
                     right: 0,
-                    borderRadius: "12px",
+                    borderRadius: "16px",
+                    border: `1px solid ${T.line}`,
+                    boxShadow: "0 20px 40px -20px rgba(22,20,15,0.25)",
                     overflow: "hidden",
                     zIndex: 1000,
+                    bgcolor: T.surface,
                   }}
                 >
                   <List sx={{ p: 0 }}>
@@ -164,25 +194,26 @@ function Navbar() {
                           setResults([]);
                           navigate(`/profile/${user.id}`);
                         }}
-                        sx={{ "&:hover": { bgcolor: "#f0f2f5" } }}
+                        sx={{ "&:hover": { bgcolor: T.paper } }}
                       >
                         <ListItemAvatar>
                           <Avatar
-                            sx={{ bgcolor: "#1877f2", fontSize: "0.8rem" }}
+                            sx={{
+                              bgcolor: T.ember,
+                              fontSize: "0.8rem",
+                              fontFamily: T.fontDisplay,
+                              fontWeight: 600,
+                            }}
                           >
                             {user.username?.charAt(0).toUpperCase()}
                           </Avatar>
                         </ListItemAvatar>
                         <ListItemText
                           primary={user.username}
-                          primaryTypographyProps={{
-                            fontWeight: 600,
-                            fontSize: "0.9rem",
-                          }}
+                          primaryTypographyProps={{ fontWeight: 600, fontSize: "0.9rem", color: T.ink }}
                         />
                       </ListItem>
                     ))}
-                    {/* "View All Results" button */}
                     <ListItem
                       button
                       onClick={() => {
@@ -191,13 +222,9 @@ function Navbar() {
                         setResults([]);
                         navigate(`/search?q=${encodeURIComponent(searchTerm)}`);
                       }}
-                      sx={{ justifyContent: "center", bgcolor: "#f0f2f5" }}
+                      sx={{ justifyContent: "center", bgcolor: T.paper }}
                     >
-                      <Typography
-                        variant="body2"
-                        color="primary"
-                        fontWeight="bold"
-                      >
+                      <Typography variant="body2" sx={{ color: T.emberInk, fontWeight: 700 }}>
                         View all results for "{query}" →
                       </Typography>
                     </ListItem>
@@ -208,18 +235,10 @@ function Navbar() {
           </Box>
 
           {/* 2. Middle Section: Nav Icons */}
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <NavBtn
-              to="/home"
-              icon={<HomeRoundedIcon />}
-              active={location.pathname === "/home"}
-            />
-            <NavBtn
-              to="/postwrite"
-              icon={<AddCircleRoundedIcon />}
-              active={location.pathname === "/postwrite"}
-            />
-             <NotificationBell />
+          <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+            <NavBtn to="/home" icon={<HomeRoundedIcon />} active={location.pathname === "/home"} />
+            <NavBtn to="/postwrite" icon={<AddCircleRoundedIcon />} active={location.pathname === "/postwrite"} />
+            <NotificationBell />
           </Box>
 
           {/* 3. Right Section: Logout */}
@@ -227,11 +246,13 @@ function Navbar() {
             onClick={handleLogout}
             startIcon={<LogoutRoundedIcon />}
             sx={{
-              borderRadius: "10px",
-              color: "#65676b",
+              borderRadius: "999px",
+              color: T.inkSoft,
               textTransform: "none",
               fontWeight: 700,
-              "&:hover": { color: "#f02849", bgcolor: "#fce9eb" },
+              fontSize: "0.85rem",
+              px: 2,
+              "&:hover": { color: T.emberInk, bgcolor: T.emberTint },
             }}
           >
             Logout
@@ -242,18 +263,17 @@ function Navbar() {
   );
 }
 
-// Helper component for cleaner Buttons
 const NavBtn = ({ to, icon, active }) => (
   <Button
     component={Link}
     to={to}
     sx={{
-      minWidth: "50px",
-      borderRadius: "12px",
-      color: active ? "#1877f2" : "#65676b",
-      bgcolor: active ? alpha("#1877f2", 0.1) : "transparent",
-      "&:hover": { bgcolor: active ? alpha("#1877f2", 0.15) : "#f0f2f5" },
-      px: 2,
+      minWidth: "44px",
+      borderRadius: "999px",
+      color: active ? "#e0431f" : "#58534a",
+      bgcolor: active ? "#fce6dd" : "transparent",
+      "&:hover": { bgcolor: active ? "#f6d4c4" : "#faf8f4" },
+      px: 1.75,
     }}
   >
     {icon}

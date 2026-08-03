@@ -78,10 +78,10 @@ app.use(
     credentials: true,
   }),
 );
-app.use('/api/login', rateLimiters.auth);
-app.use('/api/signup', rateLimiters.auth);
-app.use('/api/google', rateLimiters.auth);
-app.use('/api', rateLimiters.general);
+// app.use('/api/login', rateLimiters.auth);
+// app.use('/api/signup', rateLimiters.auth);
+// app.use('/api/google', rateLimiters.auth);
+// app.use('/api', rateLimiters.general);
 app.use(customSecurityHeaders);
 app.use(sessionSecurityHeaders);
 

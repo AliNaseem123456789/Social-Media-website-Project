@@ -17,15 +17,14 @@ class SQSPublisher {
             }
 
             const result = await sqs.sendMessage(params).promise();
-            console.log(`📬 SQS Message sent: ${result.MessageId}`);
+            console.log(`SQS Message sent: ${result.MessageId}`);
             return { success: true, messageId: result.MessageId };
         } catch (error) {
-            console.error('❌ SQS Send Error:', error);
+            console.error('SQS Send Error:', error);
             return { success: false, error: error.message };
         }
     }
 
-    // ============ Image Processing ============
     async sendToImageQueue(data) {
         return this.sendMessage(
             QUEUES.IMAGE,
@@ -40,7 +39,6 @@ class SQSPublisher {
         );
     }
 
-    // ============ Search Indexing ============
     async sendToSearchQueue(data) {
         return this.sendMessage(
             QUEUES.SEARCH,
@@ -56,7 +54,6 @@ class SQSPublisher {
         );
     }
 
-    // ============ Analytics ============
     async sendToAnalyticsQueue(data) {
         return this.sendMessage(
             QUEUES.ANALYTICS,
@@ -70,12 +67,11 @@ class SQSPublisher {
         );
     }
 
-    // ============ Notifications ============
     async sendToNotificationQueue(data) {
         return this.sendMessage(
             QUEUES.NOTIFICATION,
             {
-                type: data.type, // LIKE, COMMENT, FOLLOW
+                type: data.type,
                 recipientId: data.recipientId,
                 actorId: data.actorId,
                 actorName: data.actorName,
@@ -100,16 +96,13 @@ class SQSPublisher {
         );
     }
 
-    // ============ Feed Generation ============
-   // services/publishers/SQSPublisher.js
-
 async sendToFeedQueue(data) {
     return this.sendMessage(
         QUEUES.FEED,
         {
-            action: data.action, // 'NEW_POST', 'UPDATE_FEED', 'REFRESH_USER', 'FRIEND_ACCEPTED'
+            action: data.action, 
             userId: data.userId,
-            friendId: data.friendId,  // For friend acceptance
+            friendId: data.friendId,  
             postId: data.postId,
             timestamp: Date.now()
         },
@@ -117,7 +110,6 @@ async sendToFeedQueue(data) {
     );
 }
 
-    // ============ Cleanup ============
     async sendToCleanupQueue(data) {
         return this.sendMessage(
             QUEUES.CLEANUP,
@@ -131,7 +123,6 @@ async sendToFeedQueue(data) {
         );
     }
 
-    // ============ Moderation ============
     async sendToModerationQueue(data) {
         return this.sendMessage(
             QUEUES.MODERATION,

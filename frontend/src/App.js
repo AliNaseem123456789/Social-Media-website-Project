@@ -23,6 +23,9 @@ import VideoCall from "./features/friends/pages/VideoCall";
 import ProtectedRoute from "./features/auth/components/RouteGuards";
 import Chatbot from "./pages/Chatbot";
 import SearchResults from "./features/search/pages/SearchResults";
+import PublicDownload from "./pages/Downloads";
+import LikedPosts from "./features/posts/pages/LikedPosts";
+import Onboarding from "./features/onboarding/pages/Onboarding";
 export default function App() {
   return (
     <Router>
@@ -35,6 +38,7 @@ export default function App() {
 
         {/* PROTECTED ROUTES - Only for logged in users */}
         <Route element={<ProtectedRoute />}>
+        <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/home" element={<Home />} />
           <Route path="/postwrite" element={<WritePost />} />
           <Route path="/profile" element={<Profile />} />
@@ -44,16 +48,21 @@ export default function App() {
           <Route path="/myposts/:id" element={<MyPost />} />
           <Route path="/friendspage/:id" element={<FriendsPage />} />
           <Route path="/chat/:otherUserId" element={<ChatPage />} />
-          <Route path="/recentchat/:id" element={<RecentChats />} />
+          {/* <Route path="/recentchat/:id" element={<RecentChats />} /> */}
           <Route path="/videocall" element={<VideoCall />} />
           <Route path="/search" element={<SearchResults />} />
-          
-          {/* <Route path="/chatbot" element={<Chatbot />} /> */}
+          <Route path="/public-download" element={<PublicDownload />} />
+          <Route path="/likedposts/:id" element={<LikedPosts />} />
+          <Route path="/chatbot" element={<Chatbot />} />
+  
+
+{/* </Route>inside <Route element={<ProtectedRoute />}> */}
+
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
          <Chatbot />   
-      <Footer />
+     
     </Router>
   );
 }

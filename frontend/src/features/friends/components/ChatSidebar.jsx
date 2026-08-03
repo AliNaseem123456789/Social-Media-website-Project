@@ -1,5 +1,3 @@
-// ChatSidebar.jsx - FIX THE INFINITE LOOP
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -17,11 +15,13 @@ import {
   CircularProgress,
   Stack,
 } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
-import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
+import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
+import ChatBubbleOutlineRoundedIcon from "@mui/icons-material/ChatBubbleOutlineRounded";
 import { friendService } from "../services/friendsService";
 import { chatService } from "../services/chatService";
 import { useAuth } from "../../auth/context/AuthContext";
+
+const ACCENT = "#1877f2";
 
 function ChatSidebar() {
   const [friends, setFriends] = useState([]);
@@ -30,19 +30,15 @@ function ChatSidebar() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { otherUserId } = useParams();
-  
+
   const { user: currentUser } = useAuth();
   const currentUserId = currentUser?.id;
-
-  // ✅ Use a ref to prevent multiple calls
   const hasLoaded = React.useRef(false);
 
   useEffect(() => {
-    // ✅ Only load once
     if (!currentUserId || hasLoaded.current) return;
-    
     hasLoaded.current = true;
-    
+
     const loadData = async () => {
       setLoading(true);
       try {
@@ -50,10 +46,6 @@ function ChatSidebar() {
           friendService.getFriends(),
           chatService.getRecentChats(),
         ]);
-        
-        console.log("Friends data loaded once:", friendsData);
-        console.log("Recent chats loaded once:", chatsData);
-        
         setFriends(friendsData.friends || friendsData || []);
         setRecentChats(chatsData || []);
       } catch (error) {
@@ -62,265 +54,265 @@ function ChatSidebar() {
         setLoading(false);
       }
     };
-    
-    loadData();
-  }, [currentUserId]); // ✅ Only depends on currentUserId
 
-  // Filter friends based on search
+    loadData();
+  }, [currentUserId]);
+
   const filteredFriends = friends.filter((f) =>
     f.username?.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Format last chat time
   const formatLastChatTime = (timestamp) => {
     if (!timestamp) return "";
     const date = new Date(timestamp);
     const now = new Date();
     const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 0) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     } else if (diffDays === 1) {
       return "Yesterday";
     } else if (diffDays < 7) {
-      return date.toLocaleDateString([], { weekday: 'short' });
-    } else {
-      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      return date.toLocaleDateString([], { weekday: "short" });
     }
+    return date.toLocaleDateString([], { month: "short", day: "numeric" });
   };
 
   if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
-        <CircularProgress size={40} sx={{ color: "#1877f2" }} />
+        <CircularProgress size={32} sx={{ color: ACCENT }} thickness={4} />
       </Box>
     );
   }
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        bgcolor: "#fff",
-      }}
-    >
-      {/* Header */}
-      <Box sx={{ p: 2.5, pb: 1.5, borderBottom: "1px solid #e0e0e0" }}>
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", bgcolor: "#fff" }}>
+      <Box sx={{ p: 3, pb: 2 }}>
         <Typography
-          variant="h5"
-          sx={{ fontWeight: 800, mb: 2, color: "#1a1a1b", letterSpacing: "-0.5px" }}
+          variant="h6"
+          sx={{ fontWeight: 800, mb: 2, color: "#1a1a1b", letterSpacing: "-0.3px" }}
         >
           Chats
         </Typography>
-        
+
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
             bgcolor: "#f0f2f5",
-            borderRadius: "16px",
-            px: 2,
-            py: 0.75,
+            borderRadius: "14px",
+            px: 1.75,
+            py: 0.9,
             transition: "all 0.2s",
             "&:focus-within": {
               bgcolor: "#fff",
-              boxShadow: "0 0 0 2px #1877f2",
+              boxShadow: `0 0 0 1.5px ${ACCENT}`,
             },
           }}
         >
-          <SearchIcon sx={{ color: "gray", mr: 1.5, fontSize: 20 }} />
+          <SearchRoundedIcon sx={{ color: "#8a8d91", mr: 1.25, fontSize: 19 }} />
           <InputBase
-            placeholder="Search friends..."
+            placeholder="Search friends"
             fullWidth
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            sx={{ fontSize: "0.9rem" }}
+            sx={{ fontSize: "0.875rem" }}
           />
         </Box>
       </Box>
 
-      {/* Recent Chats Section */}
-      {recentChats.length > 0 && (
-        <>
-          <Box sx={{ px: 2.5, pt: 2 }}>
+      <Box sx={{ flexGrow: 1, overflowY: "auto", px: 1.25, pb: 2 }}>
+        {recentChats.length > 0 && !search && (
+          <>
             <Typography
               variant="overline"
-              sx={{ fontWeight: 700, color: "text.secondary", letterSpacing: 1 }}
+              sx={{
+                px: 1.5,
+                fontWeight: 700,
+                color: "text.secondary",
+                letterSpacing: 0.6,
+                fontSize: "0.68rem",
+              }}
             >
-              Recent Chats
+              Recent
             </Typography>
-          </Box>
-          <List sx={{ px: 1, py: 0 }}>
-            {recentChats.slice(0, 5).map((chat) => {
-              const isActive = String(chat.id) === String(otherUserId);
+            <List sx={{ py: 0.5 }}>
+              {recentChats.slice(0, 6).map((chat) => {
+                const isActive = String(chat.id) === String(otherUserId);
+                return (
+                  <ListItemButton
+                    key={chat.id}
+                    onClick={() => navigate(`/chat/${chat.id}`)}
+                    sx={{
+                      borderRadius: "14px",
+                      mb: 0.25,
+                      py: 1,
+                      bgcolor: isActive ? alpha(ACCENT, 0.08) : "transparent",
+                      "&:hover": { bgcolor: isActive ? alpha(ACCENT, 0.1) : "#f5f6f7" },
+                    }}
+                  >
+                    <ListItemAvatar sx={{ minWidth: 54 }}>
+                      <Badge
+                        overlap="circular"
+                        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                        variant="dot"
+                        sx={{
+                          "& .MuiBadge-badge": {
+                            bgcolor: "#31c48d",
+                            boxShadow: "0 0 0 2px #fff",
+                            width: 10,
+                            height: 10,
+                            borderRadius: "50%",
+                          },
+                        }}
+                      >
+                        <Avatar
+                          src={chat.profile_image}
+                          sx={{
+                            bgcolor: ACCENT,
+                            width: 46,
+                            height: 46,
+                            fontWeight: 700,
+                            border: isActive ? `2px solid ${ACCENT}` : "none",
+                          }}
+                        >
+                          {chat.username?.charAt(0).toUpperCase()}
+                        </Avatar>
+                      </Badge>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary={
+                        <Stack direction="row" justifyContent="space-between" alignItems="center">
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontWeight: isActive ? 700 : 600,
+                              color: isActive ? ACCENT : "#1a1a1b",
+                              fontSize: "0.9rem",
+                            }}
+                          >
+                            {chat.username}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: "text.disabled", fontSize: "0.7rem" }}>
+                            {formatLastChatTime(chat.last_chatted)}
+                          </Typography>
+                        </Stack>
+                      }
+                      secondary={
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: "text.secondary",
+                            fontSize: "0.79rem",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            maxWidth: "180px",
+                          }}
+                        >
+                          {chat.last_message || "Click to start chatting"}
+                        </Typography>
+                      }
+                    />
+                  </ListItemButton>
+                );
+              })}
+            </List>
+            <Divider sx={{ my: 1.5, mx: 1.5 }} />
+          </>
+        )}
+
+        <Typography
+          variant="overline"
+          sx={{
+            px: 1.5,
+            fontWeight: 700,
+            color: "text.secondary",
+            letterSpacing: 0.6,
+            fontSize: "0.68rem",
+          }}
+        >
+          {search ? "Search results" : "All friends"}
+        </Typography>
+
+        <List sx={{ py: 0.5 }}>
+          {filteredFriends.length === 0 ? (
+            <Box sx={{ textAlign: "center", py: 5 }}>
+              <ChatBubbleOutlineRoundedIcon sx={{ color: "#d7d9dc", fontSize: 42 }} />
+              <Typography variant="body2" sx={{ color: "text.disabled", mt: 1, fontSize: "0.85rem" }}>
+                {search ? "No friends found" : "No friends yet"}
+              </Typography>
+            </Box>
+          ) : (
+            filteredFriends.map((friend) => {
+              const isActive = String(friend.id) === String(otherUserId);
               return (
                 <ListItemButton
-                  key={chat.id}
-                  onClick={() => navigate(`/chat/${chat.id}`)}
+                  key={friend.id}
+                  onClick={() => navigate(`/chat/${friend.id}`)}
                   sx={{
-                    borderRadius: "16px",
-                    mb: 0.5,
-                    transition: "0.2s",
-                    bgcolor: isActive ? alpha("#1877f2", 0.08) : "transparent",
-                    "&:hover": {
-                      bgcolor: isActive ? alpha("#1877f2", 0.12) : "#f5f5f5",
-                    },
-                    py: 1.5,
+                    borderRadius: "14px",
+                    mb: 0.25,
+                    py: 0.85,
+                    bgcolor: isActive ? alpha(ACCENT, 0.08) : "transparent",
+                    "&:hover": { bgcolor: isActive ? alpha(ACCENT, 0.1) : "#f5f6f7" },
                   }}
                 >
-                  <ListItemAvatar>
+                  <ListItemAvatar sx={{ minWidth: 50 }}>
                     <Badge
                       overlap="circular"
                       anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
                       variant="dot"
                       sx={{
                         "& .MuiBadge-badge": {
-                          bgcolor: "#44b700",
+                          bgcolor: "#31c48d",
                           boxShadow: "0 0 0 2px #fff",
+                          width: 9,
+                          height: 9,
+                          borderRadius: "50%",
                         },
                       }}
                     >
                       <Avatar
-                        src={chat.profile_image}
+                        src={friend.profile_image}
                         sx={{
-                          bgcolor: "#1877f2",
-                          width: 52,
-                          height: 52,
-                          border: isActive ? "2px solid #1877f2" : "none",
+                          bgcolor: ACCENT,
+                          width: 42,
+                          height: 42,
+                          fontWeight: 700,
+                          border: isActive ? `2px solid ${ACCENT}` : "none",
                         }}
                       >
-                        {chat.username?.charAt(0).toUpperCase()}
+                        {friend.username?.charAt(0).toUpperCase()}
                       </Avatar>
                     </Badge>
                   </ListItemAvatar>
                   <ListItemText
                     primary={
-                      <Stack direction="row" justifyContent="space-between" alignItems="center">
-                        <Typography
-                          variant="body1"
-                          sx={{
-                            fontWeight: isActive ? 700 : 600,
-                            color: isActive ? "#1877f2" : "#1a1a1b",
-                            fontSize: "0.95rem",
-                          }}
-                        >
-                          {chat.username}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.7rem" }}>
-                          {formatLastChatTime(chat.last_chatted)}
-                        </Typography>
-                      </Stack>
-                    }
-                    secondary={
                       <Typography
                         variant="body2"
                         sx={{
-                          color: "text.secondary",
-                          fontSize: "0.8rem",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          maxWidth: "180px",
+                          fontWeight: isActive ? 700 : 600,
+                          color: isActive ? ACCENT : "#1a1a1b",
+                          fontSize: "0.88rem",
                         }}
                       >
-                        {chat.last_message || "Click to start chatting"}
+                        {friend.username}
+                      </Typography>
+                    }
+                    secondary={
+                      <Typography variant="caption" sx={{ color: "text.disabled", fontSize: "0.74rem" }}>
+                        Tap to chat
                       </Typography>
                     }
                   />
                 </ListItemButton>
               );
-            })}
-          </List>
-          <Divider sx={{ my: 1 }} />
-        </>
-      )}
-
-      {/* Friends Section */}
-      <Box sx={{ px: 2.5, pt: recentChats.length > 0 ? 0 : 2 }}>
-        <Typography
-          variant="overline"
-          sx={{ fontWeight: 700, color: "text.secondary", letterSpacing: 1 }}
-        >
-          All Friends
-        </Typography>
+            })
+          )}
+        </List>
       </Box>
-      
-      <List sx={{ flexGrow: 1, overflowY: "auto", px: 1, pb: 2 }}>
-        {filteredFriends.length === 0 ? (
-          <Box sx={{ textAlign: "center", py: 4 }}>
-            <ChatBubbleOutlineIcon sx={{ color: "text.disabled", fontSize: 48 }} />
-            <Typography variant="body2" sx={{ color: "text.secondary", mt: 1 }}>
-              {search ? "No friends found" : "No friends yet"}
-            </Typography>
-          </Box>
-        ) : (
-          filteredFriends.map((friend) => {
-            const isActive = String(friend.id) === String(otherUserId);
-            return (
-              <ListItemButton
-                key={friend.id}
-                onClick={() => navigate(`/chat/${friend.id}`)}
-                sx={{
-                  borderRadius: "16px",
-                  mb: 0.5,
-                  transition: "0.2s",
-                  bgcolor: isActive ? alpha("#1877f2", 0.08) : "transparent",
-                  "&:hover": {
-                    bgcolor: isActive ? alpha("#1877f2", 0.12) : "#f5f5f5",
-                  },
-                  py: 1,
-                }}
-              >
-                <ListItemAvatar>
-                  <Badge
-                    overlap="circular"
-                    anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-                    variant="dot"
-                    sx={{
-                      "& .MuiBadge-badge": {
-                        bgcolor: "#44b700",
-                        boxShadow: "0 0 0 2px #fff",
-                      },
-                    }}
-                  >
-                    <Avatar
-                      src={friend.profile_image}
-                      sx={{
-                        bgcolor: "#1877f2",
-                        width: 48,
-                        height: 48,
-                        border: isActive ? "2px solid #1877f2" : "none",
-                      }}
-                    >
-                      {friend.username?.charAt(0).toUpperCase()}
-                    </Avatar>
-                  </Badge>
-                </ListItemAvatar>
-                <ListItemText
-                  primary={
-                    <Typography
-                      variant="body1"
-                      sx={{
-                        fontWeight: isActive ? 700 : 600,
-                        color: isActive ? "#1877f2" : "#1a1a1b",
-                      }}
-                    >
-                      {friend.username}
-                    </Typography>
-                  }
-                  secondary={
-                    <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                      Click to chat
-                    </Typography>
-                  }
-                />
-              </ListItemButton>
-            );
-          })
-        )}
-      </List>
     </Box>
   );
 }

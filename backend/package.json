@@ -6,9 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon server.js",
-   "start:analytics": "node consumers/analytics-worker.js",
+    "start:analytics": "node consumers/analytics-worker.js",
     "dev:analytics": "nodemon consumers/analytics-worker.js",
-    "start:notification": "node consumers/notification-worker.js",
+    "start:notification": "node consumers/NotificationConsumer.js",
     "start:feed": "node consumers/feed-worker.js",
     "start:all": "concurrently \"npm run start\" \"npm run start:analytics\"",
     "dev:all": "concurrently \"npm run dev\" \"npm run dev:analytics\""
@@ -46,6 +46,7 @@
     "nodemailer": "^7.0.10",
     "nodemon": "^3.1.10",
     "redis": "^5.12.1",
+    "sharp": "^0.35.3",
     "socket.io": "^4.8.1"
   }
 }

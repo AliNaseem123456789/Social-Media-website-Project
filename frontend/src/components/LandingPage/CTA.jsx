@@ -1,17 +1,20 @@
 export function CTA({ onLogin, onSignup }) {
   return (
-    <section className="cta">
-      <h2>Start your journey now</h2>
-      <p>It only takes 30 seconds to connect with your community</p>
-
-      <div className="cta-buttons">
-        <button className="btn primary" onClick={onSignup}>
-          Sign Up with Email
-        </button>
-
-        <button className="btn outline" onClick={onLogin}>
-          Already have an account?
-        </button>
+    <section className="lp-section-pad">
+      <div className="lp-wrap">
+        <div className="lp-final-cta">
+          <div className="lp-final-cta__ring" />
+          <h2>Your circle is one sign-up away.</h2>
+          <p>Takes about thirty seconds. No credit card, no waiting list.</p>
+          <div className="lp-final-cta__actions">
+            <button className="lp-btn lp-btn--primary" onClick={onSignup}>
+              Create your account
+            </button>
+            <button className="lp-btn lp-btn--on-dark" onClick={onLogin}>
+              Already have an account?
+            </button>
+          </div>
+        </div>
       </div>
     </section>
   );

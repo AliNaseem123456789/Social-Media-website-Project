@@ -32,8 +32,7 @@ class RabbitMQManager {
       return false;
     }
     
-    // IMPORTANT: DO NOT assert queue here - just publish
-    // The queue should already exist from email microservice
+
     this.channel.sendToQueue(queueName, Buffer.from(JSON.stringify(message)), {
       persistent: true
     });

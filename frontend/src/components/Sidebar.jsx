@@ -25,6 +25,7 @@ import FavoriteRoundedIcon from "@mui/icons-material/FavoriteRounded";
 import GroupRoundedIcon from "@mui/icons-material/GroupRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import AccountCircleRoundedIcon from "@mui/icons-material/AccountCircleRounded";
+
 import { useAuth } from "../features/auth/context/AuthContext";
 import apiClient from "../api/apiClient";
 
@@ -52,9 +53,8 @@ function Sidebar() {
   
   
   const { user, logout } = useAuth();
-  const userId = user?.id;  // ✅ From session, not localStorage
+  const userId = user?.id;  
 
-  // ✅ Updated logout using session auth
   const handleLogout = async () => {
     try {
       await apiClient.post("/logout");
@@ -84,12 +84,17 @@ function Sidebar() {
     {
       text: "Friend Requests",
       icon: <FavoriteRoundedIcon />,
-      path: `/friendrequests/${userId}`,  // ✅ Uses userId from session
+      path: `/friendrequests/${userId}`,  
     },
-    {
+   {
+  text: "Liked Posts",
+  icon: <FavoriteRoundedIcon />,
+  path: `/likedposts/${userId}`,
+},
+       {
       text: "Friends",
       icon: <GroupRoundedIcon />,
-      path: `/friendspage/${userId}`,  // ✅ Uses userId from session
+      path: `/friendspage/${userId}`,  
     },
     { text: "Logout", icon: <LogoutRoundedIcon />, action: handleLogout },
   ];

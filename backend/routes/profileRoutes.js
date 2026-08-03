@@ -4,6 +4,7 @@ import {
   getProfile,
   addProfileInfo,
   uploadFiles,
+  completeOnboarding,
 } from "../controllers/profile.controller.js";
 import { requireAuth } from "../middleware/session.middleware.js";
 
@@ -17,5 +18,5 @@ const profileUploadFields = upload.fields([
 router.get("/:user_id", getProfile);
 router.post("/add", requireAuth, profileUploadFields, addProfileInfo);
 router.post("/upload", requireAuth, profileUploadFields, uploadFiles);
-
+router.post("/onboarding-complete", completeOnboarding);
 export default router;

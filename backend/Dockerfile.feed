@@ -12,3 +12,4 @@ COPY . .
 
 # The worker specific code is at consumers/analytics-worker.js
 CMD ["node", "consumers/feed-worker.js"]
+

@@ -1,4 +1,3 @@
-// controllers/redis.controller.js
 import redisClient from "../config/redis.config.js";
 
 /**
@@ -90,7 +89,6 @@ export const deleteRedisKey = async (req, res) => {
  */
 export const flushRedis = async (req, res) => {
   try {
-    // Add additional safety checks for production
     const isProduction = process.env.NODE_ENV === 'production';
     const confirmHeader = req.headers['x-confirm-flush'];
     

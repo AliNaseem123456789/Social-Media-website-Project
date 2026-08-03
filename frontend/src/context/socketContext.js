@@ -1,4 +1,3 @@
-// frontend/context/socketContext.jsx
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import io from 'socket.io-client';
 import { useAuth } from '../features/auth/context/AuthContext';
@@ -17,39 +16,39 @@ export const SocketProvider = ({ children }) => {
     console.log('Initializing Socket.IO for user:', userId);
     console.log('Is authenticated:', isAuthenticated);
     if (!userId || !isAuthenticated) {
-      console.log('⏳ Waiting for authentication...');
+      console.log('Waiting for authentication...');
       return;
     }
-
-    socketRef.current = io(process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000', {
+       socketRef.current = io('https://socialwebsite.duckdns.org/api', {
       withCredentials: true,
       transports: ['websocket', 'polling']
     });
+   
 
     socketRef.current.on('connect', () => {
-      console.log('🔌 Socket connected');
+      console.log('Socket connected');
       setIsConnected(true);
-      console.log('🆔 Socket ID:', socketRef.current.id);
+      console.log('Socket ID:', socketRef.current.id);
     if (userId) {
         socketRef.current.emit('join_room', { userId: parseInt(userId) });
-        console.log(`✅ Joined room for user: ${userId}`);
+        console.log(`Joined room for user: ${userId}`);
       }
     });
 
     socketRef.current.on('disconnect', () => {
-      console.log('🔌 Socket disconnected');
+      console.log('Socket disconnected');
       setIsConnected(false);
     });
     socketRef.current.on('new_notification', (notification) => {
-      console.log('🔔 FRONTEND RECEIVED NEW NOTIFICATION:', notification);
+      console.log('FRONTEND RECEIVED NEW NOTIFICATION:', notification);
       setUnreadCount(prev => prev + 1);
     });
     socketRef.current.on('unread_count_update', ({ count }) => {
-      console.log('📊 Unread count updated:', count);
+      console.log('Unread count updated:', count);
       setUnreadCount(count);
     });
     socketRef.current.onAny((event, ...args) => {
-      console.log(`📡 Socket event: ${event}`, args);
+      console.log(`Socket event: ${event}`, args);
     });
 
     return () => {

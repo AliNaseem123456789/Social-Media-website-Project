@@ -14,9 +14,7 @@ export const sendFriendRequest = async (req, res) => {
             success: false, 
             message: "Recipient ID required" 
         });
-    }
-    
-    // Don't allow sending request to yourself
+    }    
     if (requester_id === recipient_id) {
         return res.status(400).json({ 
             success: false, 
@@ -25,7 +23,6 @@ export const sendFriendRequest = async (req, res) => {
     }
     
     try {
-        // Check if friend request already exists
         const { data: existing } = await supabase
             .from("friends")
             .select("*")
@@ -167,14 +164,14 @@ export const respondToRequest = async (req, res) => {
 };
 export const getFriendsList = async (req, res) => {
     const userId = req.session?.userId;
-    
+
     if (!userId) {
-        return res.status(401).json({ 
-            success: false, 
-            message: "Not authenticated. Please login." 
+        return res.status(401).json({
+            success: false,
+            message: "Not authenticated. Please login."
         });
     }
-    
+
     try {
         const { data, error } = await supabase
             .from("friends")
@@ -188,9 +185,9 @@ export const getFriendsList = async (req, res) => {
             .or(
                 `and(requester_id.eq.${userId},status.eq.accepted),and(recipient_id.eq.${userId},status.eq.accepted)`
             );
-            
+
         if (error) throw error;
-        
+
         const friendsList = data
             .map((f) => {
                 if (f.requester.id === userId) return f.recipient;
@@ -198,17 +195,42 @@ export const getFriendsList = async (req, res) => {
                 return null;
             })
             .filter(Boolean);
-        
-        res.json({ 
-            success: true, 
-            friends: friendsList 
+
+        // NEW: batch-fetch profile images for all friends and merge them in
+        if (friendsList.length > 0) {
+            const friendIds = friendsList.map((f) => f.id);
+            const { data: profiles, error: profilesError } = await supabase
+                .from("user_profiles")
+                .select("user_id, profile_image")
+                .in("user_id", friendIds);
+
+            if (!profilesError && profiles) {
+                const imageByUserId = {};
+                profiles.forEach((p) => {
+                    if (p.profile_image) {
+                        const { data: publicUrlData } = supabase.storage
+                            .from("avatars")
+                            .getPublicUrl(p.profile_image);
+                        imageByUserId[p.user_id] = publicUrlData.publicUrl;
+                    }
+                });
+
+                friendsList.forEach((f) => {
+                    f.profile_image = imageByUserId[f.id] || null;
+                });
+            }
+        }
+
+        res.json({
+            success: true,
+            friends: friendsList
         });
-        
+
     } catch (err) {
         console.error("Get friends list error:", err);
-        res.status(500).json({ 
-            success: false, 
-            message: "Database error" 
+        res.status(500).json({
+            success: false,
+            message: "Database error"
         });
     }
 };

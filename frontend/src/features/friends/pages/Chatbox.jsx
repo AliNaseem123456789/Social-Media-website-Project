@@ -1,6 +1,4 @@
-// ChatPage.jsx - COMPLETE WORKING VERSION
-
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Box,
@@ -10,34 +8,95 @@ import {
   Typography,
   Avatar,
   Stack,
-  Grid,
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogActions,
+  Button,
   Chip,
   Badge,
   CircularProgress,
   Fade,
   Slide,
   Zoom,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+  InputAdornment,
+  Tooltip,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import SendRoundedIcon from "@mui/icons-material/SendRounded";
 import MoreVertRoundedIcon from "@mui/icons-material/MoreVertRounded";
-import VideocamIcon from "@mui/icons-material/Videocam";
-import CallEndIcon from "@mui/icons-material/CallEnd";
+import VideocamRoundedIcon from "@mui/icons-material/VideocamRounded";
+import CallEndRoundedIcon from "@mui/icons-material/CallEndRounded";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
+import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import KeyboardArrowUpRoundedIcon from "@mui/icons-material/KeyboardArrowUpRounded";
+import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
+import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
+import VolumeOffRoundedIcon from "@mui/icons-material/VolumeOffRounded";
+import VolumeUpRoundedIcon from "@mui/icons-material/VolumeUpRounded";
+import DeleteSweepRoundedIcon from "@mui/icons-material/DeleteSweepRounded";
+import BlockRoundedIcon from "@mui/icons-material/BlockRounded";
 import { chatService, socket } from "../services/chatService";
 import ChatSidebar from "../components/ChatSidebar";
 import VideoCall from "./VideoCall";
 import { useAuth } from "../../auth/context/AuthContext";
 
+const ACCENT = "#6d5ce8";
+const ACCENT_SOFT = "#eef0ff";
+const GRADIENT = "linear-gradient(135deg, #7c3aed, #2563eb)";
+const ONLINE = "#31c48d";
+const NAVBAR_HEIGHT = "64px";
+
+function escapeRegExp(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Splits text around every case-insensitive match of `query` and wraps
+ * matches in a highlighted <mark>. The currently-focused match (matched
+ * by messageIndex === activeMatchIndex) gets the stronger accent fill so
+ * the person can visually track "where am I" while paging through
+ * results, same as WhatsApp/Slack search does. */
+function HighlightedText({ text, query, isActiveMessage }) {
+  if (!query.trim()) return <>{text}</>;
+  const parts = text.split(new RegExp(`(${escapeRegExp(query)})`, "gi"));
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.toLowerCase() === query.toLowerCase() ? (
+          <Box
+            component="mark"
+            key={i}
+            sx={{
+              bgcolor: isActiveMessage ? ACCENT : "#ffe58a",
+              color: isActiveMessage ? "#fff" : "inherit",
+              borderRadius: "3px",
+              px: "2px",
+              transition: "background-color 0.15s ease",
+            }}
+          >
+            {part}
+          </Box>
+        ) : (
+          <React.Fragment key={i}>{part}</React.Fragment>
+        )
+      )}
+    </>
+  );
+}
+
 function ChatPage() {
   const navigate = useNavigate();
   const { otherUserId } = useParams();
-  
+
   const { user: currentUser, loading: authLoading } = useAuth();
   const currentUserId = currentUser?.id;
-  const currentUsername = currentUser?.username;
 
   const [message, setMessage] = useState("");
   const [chat, setChat] = useState([]);
@@ -45,45 +104,60 @@ function ChatPage() {
   const [isVideoCallOpen, setIsVideoCallOpen] = useState(false);
   const [isCallActive, setIsCallActive] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [isTyping, setIsTyping] = useState(false);
   const [recipientTyping, setRecipientTyping] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef(null);
   const messagesEndRef = useRef(null);
   const hasInitialized = useRef(false);
-  
-  const NAVBAR_HEIGHT = "64px";
-  const roomId = currentUserId && otherUserId 
-    ? `room_${Math.min(currentUserId, otherUserId)}_${Math.max(currentUserId, otherUserId)}`
-    : "";
+
+  // ---- message search state ----
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeMatch, setActiveMatch] = useState(0);
+  const searchInputRef = useRef(null);
+  const messageRefs = useRef({});
+
+  // ---- options menu / conversation actions ----
+  const [menuAnchor, setMenuAnchor] = useState(null);
+  const [muted, setMuted] = useState(false);
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
+  const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
+  const [blocking, setBlocking] = useState(false);
+  const [clearing, setClearing] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+
+  const roomId =
+    currentUserId && otherUserId
+      ? `room_${Math.min(currentUserId, otherUserId)}_${Math.max(currentUserId, otherUserId)}`
+      : "";
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [chat]);
+    if (!searchOpen) scrollToBottom();
+  }, [chat, searchOpen]);
 
   const handleTyping = () => {
     if (!isTyping) {
       setIsTyping(true);
       socket.emit("typing", { to: otherUserId, isTyping: true });
     }
-    
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => {
       setIsTyping(false);
       socket.emit("typing", { to: otherUserId, isTyping: false });
     }, 1000);
   };
-  
+
   useEffect(() => {
     if (!currentUserId || !otherUserId) return;
     if (hasInitialized.current) return;
     hasInitialized.current = true;
-    
+
     chatService.registerUser();
-    
+
     const initializeChat = async () => {
       setLoading(true);
       try {
@@ -98,7 +172,7 @@ function ChatPage() {
             from: String(msg.from_user) === String(currentUserId) ? "Me" : userInfo.username,
             text: msg.message,
             timestamp: msg.created_at,
-          })),
+          }))
         );
       } catch (err) {
         console.error("Error initializing chat:", err);
@@ -106,27 +180,21 @@ function ChatPage() {
         setLoading(false);
       }
     };
-    
+
     initializeChat();
-    
+
     socket.on("private_message", (data) => {
       if (String(data.from) === String(currentUserId)) return;
       if (String(data.from) === String(otherUserId)) {
         setChat((prev) => [
           ...prev,
-          {
-            from: data.username,
-            text: data.message,
-            timestamp: new Date().toISOString(),
-          },
+          { from: data.username, text: data.message, timestamp: new Date().toISOString() },
         ]);
       }
     });
 
     socket.on("typing", ({ from, isTyping: typing }) => {
-      if (String(from) === String(otherUserId)) {
-        setRecipientTyping(typing);
-      }
+      if (String(from) === String(otherUserId)) setRecipientTyping(typing);
     });
 
     socket.on("video_call_request", ({ from, roomId: callRoomId }) => {
@@ -159,12 +227,7 @@ function ChatPage() {
 
   const sendMessage = () => {
     if (!message.trim()) return;
-    
-    socket.emit("private_message", {
-      to: parseInt(otherUserId),
-      message,
-    });
-    
+    socket.emit("private_message", { to: parseInt(otherUserId), message });
     setChat((prev) => [...prev, { from: "Me", text: message, timestamp: new Date().toISOString() }]);
     setMessage("");
     setIsTyping(false);
@@ -174,10 +237,7 @@ function ChatPage() {
   const startVideoCall = () => {
     setIsVideoCallOpen(true);
     setIsCallActive(true);
-    socket.emit("video_call_request", {
-      to: otherUserId,
-      roomId,
-    });
+    socket.emit("video_call_request", { to: otherUserId, roomId });
   };
 
   const endVideoCall = () => {
@@ -185,18 +245,123 @@ function ChatPage() {
     setIsCallActive(false);
   };
 
+  /* ---------------------------------------------------------------------
+     Message search — matches are computed against the loaded `chat`
+     array. Opening search doesn't refetch anything; it filters what's
+     already on screen, same as WhatsApp Web's in-conversation search.
+     ------------------------------------------------------------------ */
+
+  const matchIndices = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return chat.reduce((acc, msg, idx) => {
+      if (msg.text?.toLowerCase().includes(q)) acc.push(idx);
+      return acc;
+    }, []);
+  }, [searchQuery, chat]);
+
+  useEffect(() => {
+    setActiveMatch(0);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (matchIndices.length === 0) return;
+    const targetIdx = matchIndices[activeMatch];
+    const el = messageRefs.current[targetIdx];
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [activeMatch, matchIndices]);
+
+  const openSearch = () => {
+    setMenuAnchor(null);
+    setSearchOpen(true);
+    // focus after the field mounts
+    setTimeout(() => searchInputRef.current?.focus(), 50);
+  };
+
+  const closeSearch = () => {
+    setSearchOpen(false);
+    setSearchQuery("");
+    setActiveMatch(0);
+  };
+
+  const goToNextMatch = useCallback(() => {
+    if (matchIndices.length === 0) return;
+    setActiveMatch((prev) => (prev + 1) % matchIndices.length);
+  }, [matchIndices.length]);
+
+  const goToPrevMatch = useCallback(() => {
+    if (matchIndices.length === 0) return;
+    setActiveMatch((prev) => (prev - 1 + matchIndices.length) % matchIndices.length);
+  }, [matchIndices.length]);
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === "Escape") {
+      closeSearch();
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (e.shiftKey) goToPrevMatch();
+      else goToNextMatch();
+    }
+  };
+
+  /* ---------------------------------------------------------------------
+     Conversation actions (mute / clear / block). These call optional
+     chatService methods — see notes at the end for the backend routes
+     needed to make them persist rather than just update local state.
+     ------------------------------------------------------------------ */
+
+  const handleToggleMute = async () => {
+    const next = !muted;
+    setMuted(next);
+    setMenuAnchor(null);
+    try {
+      await chatService.muteChat?.(otherUserId, next);
+      setSnackbar({ open: true, message: next ? "Notifications muted" : "Notifications unmuted", severity: "success" });
+    } catch {
+      setSnackbar({ open: true, message: "Couldn't update notification setting", severity: "error" });
+    }
+  };
+
+  const handleClearChat = async () => {
+    setClearing(true);
+    try {
+      await chatService.clearChat?.(otherUserId);
+      setChat([]);
+      setSnackbar({ open: true, message: "Chat cleared", severity: "success" });
+    } catch {
+      setSnackbar({ open: true, message: "Couldn't clear chat", severity: "error" });
+    } finally {
+      setClearing(false);
+      setClearConfirmOpen(false);
+    }
+  };
+
+  const handleBlockUser = async () => {
+    setBlocking(true);
+    try {
+      await chatService.blockUser?.(otherUserId);
+      setSnackbar({ open: true, message: `${recipient?.username || "User"} blocked`, severity: "success" });
+      setTimeout(() => navigate("/friendspage"), 800);
+    } catch {
+      setSnackbar({ open: true, message: "Couldn't block user", severity: "error" });
+    } finally {
+      setBlocking(false);
+      setBlockConfirmOpen(false);
+    }
+  };
+
   if (authLoading || loading) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-        <CircularProgress sx={{ color: "#1877f2" }} />
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", bgcolor: "#f7f6fc" }}>
+        <CircularProgress sx={{ color: ACCENT }} />
       </Box>
     );
   }
 
   if (!currentUserId) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-        <Typography>Please login to continue</Typography>
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", bgcolor: "#f7f6fc" }}>
+        <Typography color="text.secondary">Please login to continue</Typography>
       </Box>
     );
   }
@@ -205,33 +370,33 @@ function ChatPage() {
     <>
       <Box
         sx={{
-          bgcolor: "#f0f2f5",
-          height: `calc(100vh - ${NAVBAR_HEIGHT})`,
-          width: "100vw",
+          bgcolor: "#f7f6fc",
+          minHeight: `calc(100vh - ${NAVBAR_HEIGHT})`,
+          width: "100%",
           display: "flex",
-          overflow: "hidden",
-          position: "fixed",
-          bottom: 0,
-          left: 0,
+          justifyContent: "center",
+          p: { xs: 0, md: 3 },
         }}
       >
         <Paper
           elevation={0}
           sx={{
             width: "100%",
-            height: "100%",
-            borderRadius: 0,
+            height: { xs: `calc(100vh - ${NAVBAR_HEIGHT})`, md: "calc(100vh - 112px)" },
+            borderRadius: { xs: 0, md: "24px" },
+            border: { xs: "none", md: "1px solid rgba(124,58,237,0.08)" },
+            boxShadow: { xs: "none", md: "0 20px 60px rgba(80,50,180,0.06)" },
             display: "flex",
             overflow: "hidden",
+            bgcolor: "#fff",
           }}
         >
-          <Grid container sx={{ height: "100%", flexWrap: "nowrap" }}>
-            <Grid
-              item
+          <Box sx={{ display: "flex", height: "100%", width: "100%" }}>
+            <Box
               sx={{
-                width: { xs: "0", sm: "320px" },
+                width: { xs: "0", sm: "300px" },
                 flexShrink: 0,
-                borderRight: "1px solid #e0e0e0",
+                borderRight: "1px solid rgba(124,58,237,0.08)",
                 display: { xs: "none", sm: "block" },
                 height: "100%",
                 bgcolor: "#fff",
@@ -239,169 +404,325 @@ function ChatPage() {
               }}
             >
               <ChatSidebar />
-            </Grid>
+            </Box>
 
-            <Grid
-              item
-              xs
+            <Box
               sx={{
                 display: "flex",
                 flexDirection: "column",
                 height: "100%",
-                bgcolor: "#efeae2",
-                flexGrow: 1,
+                bgcolor: "#f9f8fd",
+                flex: "1 1 0%",
                 minWidth: 0,
               }}
             >
-              {/* Chat Header */}
+              {/* Header — swaps entirely into a search bar when active,
+                  same pattern as WhatsApp Web / Slack / Linear's inline
+                  search: no separate modal, no page jump, just an
+                  in-place transform of the existing header row. */}
               <Box
                 sx={{
-                  p: "12px 24px",
                   bgcolor: "#fff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  borderBottom: "1px solid rgba(0,0,0,0.08)",
+                  borderBottom: "1px solid rgba(124,58,237,0.08)",
                   mt: { xs: NAVBAR_HEIGHT, sm: 0 },
                   zIndex: 1,
                 }}
               >
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <IconButton 
-                    onClick={() => navigate(-1)} 
-                    sx={{ display: { xs: "flex", sm: "none" } }}
-                  >
-                    <ArrowBackRoundedIcon />
-                  </IconButton>
-                  
-                  <Badge
-                    overlap="circular"
-                    anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-                    variant="dot"
-                    sx={{
-                      "& .MuiBadge-badge": {
-                        bgcolor: "#44b700",
-                        boxShadow: "0 0 0 2px #fff",
-                      },
-                    }}
-                  >
-                    <Avatar
-                      src={recipient?.profile_image}
-                      sx={{ width: 48, height: 48, bgcolor: "#1877f2" }}
-                    >
-                      {recipient?.username?.charAt(0).toUpperCase()}
-                    </Avatar>
-                  </Badge>
-                  
-                  <Box>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
-                      {recipient?.username || "Loading..."}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: "#00a884", fontWeight: 600 }}>
-                      {recipientTyping ? "Typing..." : "Online"}
-                    </Typography>
-                  </Box>
-                </Stack>
+                {searchOpen ? (
+                  <Fade in={searchOpen}>
+                    <Stack direction="row" spacing={1} alignItems="center" sx={{ p: "10px 16px" }}>
+                      <IconButton onClick={closeSearch} size="small" sx={{ color: "text.secondary" }}>
+                        <ArrowBackRoundedIcon fontSize="small" />
+                      </IconButton>
 
-                <Stack direction="row" spacing={1}>
-                  {!isCallActive ? (
-                    <IconButton
-                      onClick={startVideoCall}
-                      sx={{
-                        bgcolor: "#00a884",
-                        color: "#fff",
-                        "&:hover": { bgcolor: "#008f6f" },
-                        borderRadius: "12px",
-                      }}
-                    >
-                      <VideocamIcon />
-                    </IconButton>
-                  ) : (
-                    <Chip
-                      icon={<VideocamIcon />}
-                      label="In Call"
-                      color="success"
-                      onDelete={endVideoCall}
-                      deleteIcon={<CallEndIcon />}
-                      sx={{ "& .MuiChip-deleteIcon": { color: "#fff" } }}
-                    />
-                  )}
-                  <IconButton size="small">
-                    <MoreVertRoundedIcon />
-                  </IconButton>
-                </Stack>
+                      <TextField
+                        inputRef={searchInputRef}
+                        fullWidth
+                        variant="standard"
+                        placeholder="Search messages in this chat"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={handleSearchKeyDown}
+                        InputProps={{
+                          disableUnderline: true,
+                          sx: { fontSize: "0.9rem" },
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <SearchRoundedIcon sx={{ fontSize: 18, color: ACCENT }} />
+                            </InputAdornment>
+                          ),
+                          endAdornment: searchQuery && (
+                            <InputAdornment position="end">
+                              <IconButton size="small" onClick={() => setSearchQuery("")}>
+                                <CloseRoundedIcon sx={{ fontSize: 16 }} />
+                              </IconButton>
+                            </InputAdornment>
+                          ),
+                        }}
+                        sx={{
+                          bgcolor: ACCENT_SOFT,
+                          borderRadius: "12px",
+                          px: 1.5,
+                          py: 0.75,
+                        }}
+                      />
+
+                      <Typography
+                        sx={{
+                          fontSize: 12,
+                          color: "text.secondary",
+                          minWidth: 52,
+                          textAlign: "center",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {searchQuery.trim()
+                          ? matchIndices.length > 0
+                            ? `${activeMatch + 1}/${matchIndices.length}`
+                            : "0/0"
+                          : ""}
+                      </Typography>
+
+                      <IconButton
+                        size="small"
+                        onClick={goToPrevMatch}
+                        disabled={matchIndices.length === 0}
+                        sx={{ color: ACCENT }}
+                      >
+                        <KeyboardArrowUpRoundedIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={goToNextMatch}
+                        disabled={matchIndices.length === 0}
+                        sx={{ color: ACCENT }}
+                      >
+                        <KeyboardArrowDownRoundedIcon fontSize="small" />
+                      </IconButton>
+                    </Stack>
+                  </Fade>
+                ) : (
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    sx={{ p: "14px 28px" }}
+                  >
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <IconButton onClick={() => navigate(-1)} sx={{ display: { xs: "flex", sm: "none" } }}>
+                        <ArrowBackRoundedIcon />
+                      </IconButton>
+
+                      <Badge
+                        overlap="circular"
+                        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                        variant="dot"
+                        sx={{
+                          "& .MuiBadge-badge": {
+                            bgcolor: ONLINE,
+                            boxShadow: "0 0 0 2px #fff",
+                            width: 11,
+                            height: 11,
+                            borderRadius: "50%",
+                          },
+                        }}
+                      >
+                        <Avatar
+                          src={recipient?.profile_image}
+                          onClick={() => navigate(`/profile/${otherUserId}`)}
+                          sx={{ width: 44, height: 44, background: GRADIENT, fontWeight: 700, cursor: "pointer" }}
+                        >
+                          {recipient?.username?.charAt(0).toUpperCase()}
+                        </Avatar>
+                      </Badge>
+
+                      <Box>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.2, fontSize: "0.98rem" }}>
+                          {recipient?.username || "Loading..."}
+                        </Typography>
+                        <Stack direction="row" spacing={0.75} alignItems="center">
+                          <Typography
+                            variant="caption"
+                            sx={{ color: recipientTyping ? ACCENT : ONLINE, fontWeight: 600, fontSize: "0.75rem" }}
+                          >
+                            {recipientTyping ? "typing..." : "Online"}
+                          </Typography>
+                          {muted && <VolumeOffRoundedIcon sx={{ fontSize: 13, color: "text.disabled" }} />}
+                        </Stack>
+                      </Box>
+                    </Stack>
+
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Tooltip title="Search in conversation">
+                        <IconButton
+                          onClick={openSearch}
+                          sx={{
+                            color: "text.secondary",
+                            "&:hover": { bgcolor: ACCENT_SOFT, color: ACCENT },
+                            borderRadius: "12px",
+                          }}
+                        >
+                          <SearchRoundedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+
+                      {!isCallActive ? (
+                        <Tooltip title="Start video call">
+                          <IconButton
+                            onClick={startVideoCall}
+                            sx={{
+                              bgcolor: ACCENT_SOFT,
+                              color: ACCENT,
+                              "&:hover": { bgcolor: "#e2e0ff" },
+                              borderRadius: "12px",
+                            }}
+                          >
+                            <VideocamRoundedIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      ) : (
+                        <Chip
+                          icon={<VideocamRoundedIcon sx={{ color: "#fff !important" }} />}
+                          label="In call"
+                          onDelete={endVideoCall}
+                          deleteIcon={<CallEndRoundedIcon sx={{ color: "#fff !important" }} />}
+                          sx={{
+                            background: GRADIENT,
+                            color: "#fff",
+                            fontWeight: 600,
+                            "& .MuiChip-deleteIcon": { color: "#fff" },
+                          }}
+                        />
+                      )}
+
+                      <IconButton
+                        size="small"
+                        onClick={(e) => setMenuAnchor(e.currentTarget)}
+                        sx={{ color: "text.secondary" }}
+                      >
+                        <MoreVertRoundedIcon fontSize="small" />
+                      </IconButton>
+                    </Stack>
+                  </Stack>
+                )}
               </Box>
 
-              {/* Messages Area */}
+              {/* Message stream */}
               <Box
                 sx={{
                   flexGrow: 1,
                   overflowY: "auto",
-                  px: { xs: 2, md: 8, lg: 10 },
+                  px: { xs: 2, md: 6 },
                   py: 3,
                   display: "flex",
                   flexDirection: "column",
-                  gap: 0.5,
-                  backgroundImage: 'url("https://i.imgur.com/7RVjs8x.png")',
-                  backgroundRepeat: "repeat",
-                  backgroundSize: "auto",
+                  backgroundColor: "#f9f8fd",
+                  backgroundImage: "radial-gradient(rgba(124,58,237,0.05) 1px, transparent 1px)",
+                  backgroundSize: "22px 22px",
                 }}
               >
-                <Box sx={{ maxWidth: "800px", margin: "0 auto", width: "100%" }}>
+                <Box sx={{ width: "100%" }}>
+                  {chat.length === 0 && (
+                    <Box sx={{ textAlign: "center", py: 8 }}>
+                      <Avatar
+                        src={recipient?.profile_image}
+                        sx={{ width: 64, height: 64, background: GRADIENT, mx: "auto", mb: 2, fontSize: "1.5rem" }}
+                      >
+                        {recipient?.username?.charAt(0).toUpperCase()}
+                      </Avatar>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                        {recipient?.username}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                        This is the start of your conversation.
+                      </Typography>
+                    </Box>
+                  )}
+
                   {chat.map((msg, idx) => {
                     const isMe = msg.from === "Me";
-                    const showAvatar = idx === 0 || chat[idx - 1]?.from !== msg.from;
-                    
+                    const prevSame = idx > 0 && chat[idx - 1]?.from === msg.from;
+                    const nextSame = idx < chat.length - 1 && chat[idx + 1]?.from === msg.from;
+                    const showAvatar = !prevSame;
+                    const showTimestamp = !nextSame;
+
+                    const isMatch = searchOpen && matchIndices.includes(idx);
+                    const isActiveMatch = isMatch && matchIndices[activeMatch] === idx;
+
                     return (
                       <Fade in timeout={300} key={idx}>
                         <Box
+                          ref={(el) => {
+                            messageRefs.current[idx] = el;
+                          }}
                           sx={{
                             display: "flex",
                             justifyContent: isMe ? "flex-end" : "flex-start",
-                            mb: 1,
+                            mb: nextSame ? 0.35 : 1.5,
                           }}
                         >
-                          <Stack direction="row" spacing={1} alignItems="flex-end">
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            alignItems="flex-end"
+                            sx={{ maxWidth: "75%" }}
+                          >
                             {!isMe && showAvatar && (
-                              <Avatar
-                                sx={{ width: 32, height: 32, bgcolor: "#1877f2" }}
-                              >
+                              <Avatar sx={{ width: 28, height: 28, background: GRADIENT, fontSize: "0.75rem", flexShrink: 0 }}>
                                 {recipient?.username?.charAt(0).toUpperCase()}
                               </Avatar>
                             )}
-                            {!isMe && !showAvatar && <Box sx={{ width: 32 }} />}
-                            
-                            <Paper
-                              elevation={0}
-                              sx={{
-                                p: "10px 16px",
-                                borderRadius: isMe
-                                  ? "18px 4px 18px 18px"
-                                  : "4px 18px 18px 18px",
-                                maxWidth: "70%",
-                                bgcolor: isMe ? "#d9fdd3" : "#fff",
-                                color: "#111b21",
-                                boxShadow: "0 1px 1px rgba(0,0,0,0.05)",
-                                wordBreak: "break-word",
-                                transition: "all 0.2s",
-                                "&:hover": {
-                                  transform: "scale(1.01)",
-                                },
-                              }}
-                            >
-                              <Typography variant="body1" sx={{ fontSize: "0.95rem" }}>
-                                {msg.text}
-                              </Typography>
-                              <Typography variant="caption" sx={{ color: "#667781", fontSize: "0.7rem", mt: 0.5, display: "block" }}>
-                                {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}
-                              </Typography>
-                            </Paper>
+                            {!isMe && !showAvatar && <Box sx={{ width: 28, flexShrink: 0 }} />}
+
+                            <Stack alignItems={isMe ? "flex-end" : "flex-start"} spacing={0.4} sx={{ minWidth: 0 }}>
+                              <Paper
+                                elevation={0}
+                                sx={{
+                                  p: "9px 14px",
+                                  borderRadius: isMe ? "18px 4px 18px 18px" : "4px 18px 18px 18px",
+                                  background: isMe ? GRADIENT : "#fff",
+                                  color: isMe ? "#fff" : "#1a1a1b",
+                                  border: isMe
+                                    ? isActiveMatch
+                                      ? `2px solid ${ACCENT}`
+                                      : "none"
+                                    : isActiveMatch
+                                    ? `2px solid ${ACCENT}`
+                                    : "1px solid rgba(124,58,237,0.08)",
+                                  boxShadow: isMe
+                                    ? "0 6px 16px -8px rgba(109,92,232,0.55)"
+                                    : "0 2px 6px rgba(80,50,180,0.03)",
+                                  wordBreak: "break-word",
+                                  transition: "border-color 0.15s ease",
+                                }}
+                              >
+                                <Typography variant="body1" sx={{ fontSize: "0.92rem", lineHeight: 1.45 }}>
+                                  {isMatch ? (
+                                    <HighlightedText text={msg.text} query={searchQuery} isActiveMessage={isActiveMatch} />
+                                  ) : (
+                                    msg.text
+                                  )}
+                                </Typography>
+                              </Paper>
+
+                              {showTimestamp && msg.timestamp && (
+                                <Typography
+                                  variant="caption"
+                                  sx={{ color: "text.disabled", fontSize: "0.68rem", px: 0.5 }}
+                                >
+                                  {new Date(msg.timestamp).toLocaleTimeString([], {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </Typography>
+                              )}
+                            </Stack>
                           </Stack>
                         </Box>
                       </Fade>
                     );
                   })}
-                  
+
                   {recipientTyping && (
                     <Slide direction="up" in mountOnEnter unmountOnExit>
                       <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 1 }}>
@@ -409,59 +730,49 @@ function ChatPage() {
                           elevation={0}
                           sx={{
                             p: "10px 16px",
-                            borderRadius: "18px",
+                            borderRadius: "4px 18px 18px 18px",
                             bgcolor: "#fff",
-                            maxWidth: "70%",
+                            border: "1px solid rgba(124,58,237,0.08)",
                           }}
                         >
                           <Stack direction="row" spacing={0.5} alignItems="center">
-                            <Box sx={{ width: 6, height: 6, bgcolor: "#667781", borderRadius: "50%", animation: "pulse 1.5s infinite" }} />
-                            <Box sx={{ width: 6, height: 6, bgcolor: "#667781", borderRadius: "50%", animation: "pulse 1.5s infinite 0.3s" }} />
-                            <Box sx={{ width: 6, height: 6, bgcolor: "#667781", borderRadius: "50%", animation: "pulse 1.5s infinite 0.6s" }} />
+                            <Box sx={{ width: 6, height: 6, bgcolor: ACCENT, borderRadius: "50%", opacity: 0.6, animation: "lp-chat-pulse 1.4s infinite" }} />
+                            <Box sx={{ width: 6, height: 6, bgcolor: ACCENT, borderRadius: "50%", opacity: 0.6, animation: "lp-chat-pulse 1.4s infinite 0.2s" }} />
+                            <Box sx={{ width: 6, height: 6, bgcolor: ACCENT, borderRadius: "50%", opacity: 0.6, animation: "lp-chat-pulse 1.4s infinite 0.4s" }} />
                           </Stack>
                         </Paper>
                       </Box>
                     </Slide>
                   )}
-                  
+
                   <div ref={messagesEndRef} />
                 </Box>
               </Box>
 
-              {/* Input Area */}
-              <Box sx={{ p: "12px 24px", bgcolor: "#f0f2f5" }}>
-                <Stack
-                  direction="row"
-                  spacing={1.5}
-                  alignItems="center"
-                  sx={{ maxWidth: "800px", margin: "0 auto" }}
-                >
+              {/* Composer */}
+              <Box sx={{ p: "14px 28px", bgcolor: "#fff", borderTop: "1px solid rgba(124,58,237,0.08)" }}>
+                <Stack direction="row" spacing={1.5} alignItems="center" sx={{ width: "100%" }}>
                   <Box
                     sx={{
                       flexGrow: 1,
-                      bgcolor: "#fff",
-                      borderRadius: "24px",
-                      px: 2.5,
+                      bgcolor: "#f4f2fb",
+                      borderRadius: "22px",
+                      px: 2.25,
                       transition: "all 0.2s",
-                      "&:focus-within": {
-                        boxShadow: "0 0 0 2px #00a884",
-                      },
+                      "&:focus-within": { bgcolor: "#fff", boxShadow: `0 0 0 1.5px ${ACCENT}` },
                     }}
                   >
                     <TextField
                       fullWidth
                       variant="standard"
-                      placeholder="Type a message..."
+                      placeholder="Message..."
                       value={message}
                       onChange={(e) => {
                         setMessage(e.target.value);
                         handleTyping();
                       }}
                       onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
-                      InputProps={{
-                        disableUnderline: true,
-                        sx: { py: 1.5, fontSize: "0.95rem" },
-                      }}
+                      InputProps={{ disableUnderline: true, sx: { py: 1.4, fontSize: "0.9rem" } }}
                       multiline
                       maxRows={4}
                     />
@@ -471,52 +782,166 @@ function ChatPage() {
                       onClick={sendMessage}
                       disabled={!message.trim()}
                       sx={{
-                        bgcolor: "#00a884",
+                        background: message.trim() ? GRADIENT : "#e4e6e9",
                         color: "#fff",
-                        "&:hover": { bgcolor: "#008f6f" },
-                        "&.Mui-disabled": { bgcolor: "#e0e0e0", color: "#9e9e9e" },
-                        transition: "all 0.2s",
+                        width: 42,
+                        height: 42,
+                        "&:hover": { background: GRADIENT, filter: "brightness(1.05)" },
+                        "&.Mui-disabled": { background: "#e4e6e9", color: "#b0b3b8" },
                       }}
                     >
-                      <SendRoundedIcon />
+                      <SendRoundedIcon fontSize="small" />
                     </IconButton>
                   </Zoom>
                 </Stack>
               </Box>
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         </Paper>
       </Box>
 
-      {/* Video Call Dialog */}
+      {/* Conversation options menu */}
+      <Menu
+        anchorEl={menuAnchor}
+        open={!!menuAnchor}
+        onClose={() => setMenuAnchor(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        transformOrigin={{ vertical: "top", horizontal: "right" }}
+        PaperProps={{ sx: { borderRadius: "14px", border: "1px solid rgba(124,58,237,0.1)", minWidth: 220 } }}
+      >
+        <MenuItem onClick={openSearch} sx={{ fontSize: 14, py: 1.1, gap: 0.5 }}>
+          <ListItemIcon sx={{ minWidth: 32, color: "text.secondary" }}>
+            <SearchRoundedIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Search messages</ListItemText>
+        </MenuItem>
+
+        <MenuItem
+          onClick={() => {
+            setMenuAnchor(null);
+            navigate(`/profile/${otherUserId}`);
+          }}
+          sx={{ fontSize: 14, py: 1.1, gap: 0.5 }}
+        >
+          <ListItemIcon sx={{ minWidth: 32, color: "text.secondary" }}>
+            <PersonRoundedIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>View profile</ListItemText>
+        </MenuItem>
+
+        <MenuItem onClick={handleToggleMute} sx={{ fontSize: 14, py: 1.1, gap: 0.5 }}>
+          <ListItemIcon sx={{ minWidth: 32, color: "text.secondary" }}>
+            {muted ? <VolumeUpRoundedIcon fontSize="small" /> : <VolumeOffRoundedIcon fontSize="small" />}
+          </ListItemIcon>
+          <ListItemText>{muted ? "Unmute notifications" : "Mute notifications"}</ListItemText>
+        </MenuItem>
+
+        <Divider sx={{ my: 0.5 }} />
+
+        <MenuItem
+          onClick={() => {
+            setMenuAnchor(null);
+            setClearConfirmOpen(true);
+          }}
+          sx={{ fontSize: 14, py: 1.1, gap: 0.5, color: "text.secondary" }}
+        >
+          <ListItemIcon sx={{ minWidth: 32, color: "text.secondary" }}>
+            <DeleteSweepRoundedIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Clear chat</ListItemText>
+        </MenuItem>
+
+        <MenuItem
+          onClick={() => {
+            setMenuAnchor(null);
+            setBlockConfirmOpen(true);
+          }}
+          sx={{ fontSize: 14, py: 1.1, gap: 0.5, color: "#e0431f" }}
+        >
+          <ListItemIcon sx={{ minWidth: 32, color: "#e0431f" }}>
+            <BlockRoundedIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Block {recipient?.username || "user"}</ListItemText>
+        </MenuItem>
+      </Menu>
+
+      {/* Clear chat confirm */}
+      <Dialog open={clearConfirmOpen} onClose={() => setClearConfirmOpen(false)} PaperProps={{ sx: { borderRadius: "18px", p: 0.5 } }}>
+        <DialogTitle sx={{ fontWeight: 700, fontSize: 18 }}>Clear this chat?</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ fontSize: 14, color: "text.secondary" }}>
+            This clears the conversation on your side. {recipient?.username} will still see their copy of the messages.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setClearConfirmOpen(false)} sx={{ textTransform: "none" }}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleClearChat}
+            disabled={clearing}
+            sx={{
+              textTransform: "none",
+              fontWeight: 700,
+              borderRadius: "999px",
+              px: 2.5,
+              background: GRADIENT,
+              color: "#fff",
+            }}
+          >
+            {clearing ? "Clearing…" : "Clear"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Block user confirm */}
+      <Dialog open={blockConfirmOpen} onClose={() => setBlockConfirmOpen(false)} PaperProps={{ sx: { borderRadius: "18px", p: 0.5 } }}>
+        <DialogTitle sx={{ fontWeight: 700, fontSize: 18 }}>Block {recipient?.username}?</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ fontSize: 14, color: "text.secondary" }}>
+            They won't be able to message or call you. You can unblock them anytime from settings.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setBlockConfirmOpen(false)} sx={{ textTransform: "none" }}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleBlockUser}
+            disabled={blocking}
+            sx={{
+              textTransform: "none",
+              fontWeight: 700,
+              borderRadius: "999px",
+              px: 2.5,
+              bgcolor: "#e0431f",
+              color: "#fff",
+              "&:hover": { bgcolor: "#c93a19" },
+            }}
+          >
+            {blocking ? "Blocking…" : "Block"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Dialog
         open={isVideoCallOpen}
         onClose={endVideoCall}
         maxWidth="xl"
         fullScreen
-        sx={{
-          "& .MuiDialog-paper": {
-            bgcolor: "#1a1a1a",
-          },
-        }}
+        sx={{ "& .MuiDialog-paper": { bgcolor: "#14171c" } }}
       >
-        <DialogTitle sx={{ bgcolor: "#2a2a2a", color: "#fff", py: 2 }}>
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-          >
+        <DialogTitle sx={{ bgcolor: "#1c2027", color: "#fff", py: 2 }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Video Call with {recipient?.username}
+              Video call with {recipient?.username}
             </Typography>
             <IconButton onClick={endVideoCall} sx={{ color: "#fff" }}>
-              <CallEndIcon
-                sx={{ bgcolor: "#f44336", borderRadius: "50%", p: 1.5, fontSize: 30 }}
-              />
+              <CallEndRoundedIcon sx={{ bgcolor: "#e0431f", borderRadius: "50%", p: 1.5, fontSize: 30 }} />
             </IconButton>
           </Stack>
         </DialogTitle>
-        <DialogContent sx={{ p: 0, bgcolor: "#1a1a1a" }}>
+        <DialogContent sx={{ p: 0, bgcolor: "#14171c" }}>
           <VideoCall
             roomId={roomId}
             currentUserId={currentUserId}
@@ -526,10 +951,21 @@ function ChatPage() {
         </DialogContent>
       </Dialog>
 
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert severity={snackbar.severity} variant="filled" sx={{ borderRadius: "12px" }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+
       <style>
         {`
-          @keyframes pulse {
-            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+          @keyframes lp-chat-pulse {
+            0%, 100% { opacity: 0.3; transform: scale(0.85); }
             50% { opacity: 1; transform: scale(1); }
           }
         `}

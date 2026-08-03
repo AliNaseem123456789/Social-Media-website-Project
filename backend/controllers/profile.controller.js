@@ -192,4 +192,24 @@ export const addProfileInfo = async (req, res) => {
     console.error("Backend Error:", err.message);
     res.status(500).json({ error: err.message });
   }
+  };
+ export const completeOnboarding = async (req, res) => {
+  const userId = req.session?.userId;
+  if (!userId) return res.status(401).json({ success: false, message: "Not authenticated" });
+
+  try {
+    await supabaseAdmin
+      .from("user_profiles")
+      .upsert(
+        { user_id: Number(userId), onboarding_completed: true, updated_at: new Date() },
+        { onConflict: "user_id" }
+      );
+
+    await redis.del(`user:${userId}`); // matches getCurrentUser's cacheKey exactly
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Complete onboarding error:", err);
+    res.status(500).json({ success: false, message: "Failed to complete onboarding" });
+  }
+
 };

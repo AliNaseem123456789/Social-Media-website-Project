@@ -1,7 +1,6 @@
 import supabase from "../supabaseClient.js";
 import Redis from "ioredis";
 const redis = new Redis("rediss://default:gQAAAAAAAffMAAIgcDJlNzNmNzUxZDVhNDk0MGJlYjdkNDVhNjQ1MDU5Y2U4ZQ@humorous-troll-128972.upstash.io:6379");
-// const redis = new Redis("redis://localhost:6379");
 export const getUserById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -12,12 +11,31 @@ export const getUserById = async (req, res) => {
       .single();
 
     if (error) throw error;
-    res.json(data);
+
+    // NEW: attach profile image for the chat header avatar
+    const { data: profileRow } = await supabase
+      .from("user_profiles")
+      .select("profile_image")
+      .eq("user_id", Number(id))
+      .maybeSingle();
+
+    let profile_image = null;
+    if (profileRow?.profile_image) {
+      const { data: publicUrlData } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(profileRow.profile_image);
+      profile_image = publicUrlData.publicUrl;
+    }
+
+    res.json({ ...data, profile_image });
   } catch (err) {
     console.error("Error fetching user:", err);
     res.status(500).json({ error: "Failed to fetch user" });
   }
 };
+
+// ... getChatHistory unchanged ...
+
 
 export const getChatHistory = async (req, res) => {
   const currentUserId = req.session?.userId;  // ← From session!
@@ -54,14 +72,14 @@ export const getChatHistory = async (req, res) => {
 };
 
 export const getRecentChats = async (req, res) => {
-  const userId = req.session?.userId;  // ← From session!
-  
+  const userId = req.session?.userId;
+
   if (!userId) {
     return res.status(401).json({ error: "Not authenticated" });
   }
-  
+
   const cacheKey = `recentchats:user:${userId}`;
-  
+
   try {
     const cached = await redis.get(cacheKey);
     if (cached) {
@@ -76,7 +94,7 @@ export const getRecentChats = async (req, res) => {
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    
+
     if (!data || data.length === 0) {
       return res.json([]);
     }
@@ -95,20 +113,34 @@ export const getRecentChats = async (req, res) => {
 
     if (usersError) throw usersError;
 
-    // Build result
+    // NEW: batch-fetch profile images for all chat partners
+    const { data: profiles } = await supabase
+      .from("user_profiles")
+      .select("user_id, profile_image")
+      .in("user_id", partnerIds);
+
+    const imageByUserId = {};
+    (profiles || []).forEach((p) => {
+      if (p.profile_image) {
+        const { data: publicUrlData } = supabase.storage
+          .from("avatars")
+          .getPublicUrl(p.profile_image);
+        imageByUserId[p.user_id] = publicUrlData.publicUrl;
+      }
+    });
+
     let result = users.map((u) => ({
       id: u.id,
       username: u.username,
+      profile_image: imageByUserId[u.id] || null,
       last_chatted: uniquePartners[u.id],
     }));
-
-    // Sort by most recent
     result.sort((a, b) => new Date(b.last_chatted) - new Date(a.last_chatted));
     await redis.setex(cacheKey, 60, JSON.stringify(result));
     console.log(`Recent chats cached for user ${userId} (60 sec TTL)`);
-    
+
     res.json(result);
-    
+
   } catch (err) {
     console.error("Error fetching recent chats:", err);
     res.status(500).json({ error: "Failed to fetch recent chats" });

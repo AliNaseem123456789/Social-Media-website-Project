@@ -30,4 +30,8 @@ export const profileService = {
     const res = await apiClient.get(`/friends`);
     return res.data;
   },
+  completeOnboarding: async () => {
+  const response = await apiClient.post("/profile/onboarding-complete");
+  return response.data;
+},
 };

@@ -1,5 +1,3 @@
-// pages/FriendRequestsPage.jsx - UPDATED WITH SESSION AUTH
-
 import React, { useEffect, useState } from "react";
 import {
   Box,

@@ -1,12 +1,10 @@
-// middleware/session.middleware.js - FULLY CORRECTED
-
 import crypto from 'crypto';
 import Redis from "ioredis";
 
 const redis = new Redis("rediss://default:gQAAAAAAAffMAAIgcDJlNzNmNzUxZDVhNDk0MGJlYjdkNDVhNjQ1MDU5Y2U4ZQ@humorous-troll-128972.upstash.io:6379");
 
-redis.on('connect', () => console.log('✅ Session Redis connected'));
-redis.on('error', (err) => console.error('❌ Session Redis error:', err));  // ✅ UNCOMMENTED
+redis.on('connect', () => console.log('Session Redis connected'));
+redis.on('error', (err) => console.error('Session Redis error:', err));  
 
 function generateSessionId() {
     return crypto.randomBytes(32).toString('hex');
@@ -29,7 +27,7 @@ async function saveSessionToRedis(sessionId, sessionData, ttlSeconds = 86400) {
     const key = `session:${sessionId}`;
     const value = JSON.stringify(sessionData);
     await redis.setex(key, ttlSeconds, value);
-    console.log(`💾 Session saved: ${sessionId}`);
+    console.log(`Session saved: ${sessionId}`);
 }
 
 async function getSessionFromRedis(sessionId) {
@@ -44,17 +42,13 @@ async function getSessionFromRedis(sessionId) {
 async function deleteSessionFromRedis(sessionId) {
     const key = `session:${sessionId}`;
     await redis.del(key);
-    console.log(`🗑️ Session deleted: ${sessionId}`);
+    console.log(`Session deleted: ${sessionId}`);
 }
 
 export const sessionMiddleware = async (req, res, next) => {
     const cookies = parseCookies(req.headers.cookie);
-    let sessionId = cookies.sessionId;
-    
-    // Initialize req.session
-    req.session = null;
-    
-    // Load existing session
+    let sessionId = cookies.sessionId;    
+    req.session = null;    
     if (sessionId) {
         const sessionData = await getSessionFromRedis(sessionId);
         if (sessionData) {
@@ -72,10 +66,9 @@ export const sessionMiddleware = async (req, res, next) => {
         const needsSave = req.session && req.session.userId && req.session._needsSave === true;
         
         if (needsSave) {
-            // ✅ FIXED: Generate ID if not present
             if (!req.session.id) {
                 req.session.id = generateSessionId();
-                console.log(`🆕 Generated new session ID: ${req.session.id}`);
+                console.log(`Generated new session ID: ${req.session.id}`);
             }
             
             const saveSessionId = req.session.id;
@@ -85,21 +78,19 @@ export const sessionMiddleware = async (req, res, next) => {
             
             saveSessionToRedis(saveSessionId, sessionToSave, 86400).catch(err => {
                 console.error('Failed to save session:', err);
-            });
-            
-            // Set cookie if new or changed
+            });            
             if (!sessionId || saveSessionId !== sessionId) {
                 const isProduction = process.env.NODE_ENV === 'production';
                res.setHeader('Set-Cookie', `sessionId=${saveSessionId}; HttpOnly; Path=/; Max-Age=86400; SameSite=none; Secure`);
             // Development only
             // res.setHeader('Set-Cookie', `sessionId=${saveSessionId}; HttpOnly; Path=/; Max-Age=86400; SameSite=lax`);
-            //     console.log(`🍪 Set cookie: sessionId=${saveSessionId}`);
+            //     console.log(`Set cookie: sessionId=${saveSessionId}`);
             }
             
             req.session._needsSave = false;
         } else if ((!req.session || !req.session.userId) && sessionId) {
             res.setHeader('Set-Cookie', 'sessionId=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax');
-            console.log(`🗑️ Cleared invalid cookie: ${sessionId}`);
+            console.log(`Cleared invalid cookie: ${sessionId}`);
         }
         
         originalEnd.apply(res, args);
@@ -108,7 +99,6 @@ export const sessionMiddleware = async (req, res, next) => {
     next();
 };
 
-// FIXED: createSession now sets an ID
 export const createSession = (req, user) => {
     const sessionId = generateSessionId();
     req.session = {
@@ -120,7 +110,7 @@ export const createSession = (req, user) => {
         loginTime: Date.now(),
         _needsSave: true
     };
-    console.log(`🆕 Created session: ${sessionId} for user ${user.id} (${user.username})`);
+    console.log(`Created session: ${sessionId} for user ${user.id} (${user.username})`);
 };
 
 export const updateSession = (req, updates) => {
