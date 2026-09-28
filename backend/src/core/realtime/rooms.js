@@ -1,0 +1,20 @@
+export const userRoom = (userId) => `user:${userId}`;
+
+export const SOCKET_EVENTS = Object.freeze({
+  NOTIFICATION_NEW: "notification:new",
+  NOTIFICATION_UNREAD: "notification:unread",
+  MESSAGE_SEND: "message:send",
+  MESSAGE_NEW: "message:new",
+  MESSAGE_UPDATED: "message:updated",
+  MESSAGE_READ: "message:read",
+  CONVERSATION_UPDATED: "conversation:updated",
+  TYPING: "chat:typing",
+  PRESENCE: "presence:update",
+  CALL_REQUEST: "call:request",
+  CALL_REJECTED: "call:rejected",
+  CALL_JOIN: "call:join",
+  CALL_OFFER: "call:offer",
+  CALL_ANSWER: "call:answer",
+  CALL_ICE: "call:ice-candidate",
+  CALL_END: "call:end",
+});
