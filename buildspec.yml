@@ -1,36 +1,31 @@
 version: 0.2
+
 env:
   variables:
-    AWS_ACCOUNT_ID: "019256649767"
     AWS_DEFAULT_REGION: "us-east-1"
-    IMAGE_TAG: "latest"
-    REPO_URI_BACKEND: "019256649767.dkr.ecr.us-east-1.amazonaws.com/my-app-backend"
-    REPO_URI_EMAIL: "019256649767.dkr.ecr.us-east-1.amazonaws.com/my-app-email"
-    REPO_URI_ANALYTICS: "019256649767.dkr.ecr.us-east-1.amazonaws.com/my-app-analytics-worker"
-    REPO_URI_FEED: "019256649767.dkr.ecr.us-east-1.amazonaws.com/my-app-feed-worker"
+    BACKEND_REPOSITORY: "my-app-backend"
+    EMAIL_REPOSITORY: "my-app-email"
+
 phases:
   pre_build:
     commands:
-      - echo "Logging in to Amazon ECR..."
-      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      - ECR_REGISTRY=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - COMMIT_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
   build:
     commands:
-      - echo "Building backend..."
-      - docker build -t $REPO_URI_BACKEND:$IMAGE_TAG ./backend
-      - echo "Building email microservice..."
-      - docker build -t $REPO_URI_EMAIL:$IMAGE_TAG ./email-microservice
-      - echo "Building analytics worker..."
-      - docker build -t $REPO_URI_ANALYTICS:$IMAGE_TAG -f ./backend/Dockerfile.worker ./backend
-      - echo "Building feed worker..."
-      - docker build -t $REPO_URI_FEED:$IMAGE_TAG -f ./backend/Dockerfile.feed ./backend
+      - docker build -t $ECR_REGISTRY/$BACKEND_REPOSITORY:latest -t $ECR_REGISTRY/$BACKEND_REPOSITORY:$COMMIT_TAG ./backend
+      - docker build -t $ECR_REGISTRY/$EMAIL_REPOSITORY:latest -t $ECR_REGISTRY/$EMAIL_REPOSITORY:$COMMIT_TAG ./email-microservice
   post_build:
     commands:
-      - echo "Pushing ALL images to ECR..."
-      - docker push $REPO_URI_BACKEND:$IMAGE_TAG
-      - docker push $REPO_URI_EMAIL:$IMAGE_TAG
-      - docker push $REPO_URI_ANALYTICS:$IMAGE_TAG
-      - docker push $REPO_URI_FEED:$IMAGE_TAG
-      - echo "All images pushed successfully!"
+      - docker push --all-tags $ECR_REGISTRY/$BACKEND_REPOSITORY
+      - docker push --all-tags $ECR_REGISTRY/$EMAIL_REPOSITORY
+      - printf 'ECR_REGISTRY=%s\nIMAGE_TAG=%s\n' "$ECR_REGISTRY" "$COMMIT_TAG" > .deploy.env
+
 artifacts:
   files:
-    - docker-compose.yml  # Only the deploy file is needed now
+    - appspec.yml
+    - docker-compose.yml
+    - .deploy.env
+    - scripts/**/*

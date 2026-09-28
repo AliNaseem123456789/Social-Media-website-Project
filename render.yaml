@@ -1,19 +1,72 @@
+# Render blueprint. Secrets are set in the Render dashboard (sync: false), never in this file.
+# Free plan: only web services are available, so the API runs the workers in-process (EMBEDDED_WORKERS=*)
+# and the email service runs as a web service (it exposes /health). On a paid plan, remove EMBEDDED_WORKERS
+# and uncomment the worker service below.
 services:
-  # Email Microservice (Background Worker)
-  - type: worker
-    name: email-microservice
+  - type: web
+    name: circle-api
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm ci && npx prisma migrate deploy
+    startCommand: node src/server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: EMBEDDED_WORKERS
+        value: "*"
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: COOKIE_SAMESITE
+        value: none
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: RABBITMQ_URL
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: APP_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+
+  # Paid plan only: dedicated worker process (give it the same env vars as circle-api, without EMBEDDED_WORKERS).
+  # - type: worker
+  #   name: circle-worker
+  #   runtime: node
+  #   rootDir: backend
+  #   buildCommand: npm ci
+  #   startCommand: node src/workers/index.js
+
+  - type: web
+    name: circle-email
     runtime: node
     rootDir: email-microservice
-    buildCommand: npm install
-    startCommand: node index.js
+    plan: free
+    buildCommand: npm ci
+    startCommand: node src/server.js
+    healthCheckPath: /health
     envVars:
+      - key: NODE_ENV
+        value: production
       - key: RABBITMQ_URL
-        value: amqps://tdkydmkh:b8-ff1yVOoP1GwTnTtLQvfMhCYmtQAPq@warthog.lmq.cloudamqp.com/tdkydmkh
+        sync: false
       - key: SMTP_HOST
         value: smtp.gmail.com
       - key: SMTP_PORT
-        value: 587
+        value: "587"
       - key: SMTP_USER
-        sync: false  # Will set in dashboard
+        sync: false
       - key: SMTP_PASS
-        sync: false  # Will set in dashboard
+        sync: false
+      - key: APP_URL
+        sync: false

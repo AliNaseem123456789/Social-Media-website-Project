@@ -1,67 +1,48 @@
-version: '3.8'
-#: This version uses image: (pulls from ECR) instead of build: this is ECR docker version
+# Production stack for the EC2 host. Images are built by CodeBuild (buildspec.yml) and pushed to ECR.
+# Configuration comes from backend/.env and email-microservice/.env on the server.
+# Override the registry or tag with ECR_REGISTRY / IMAGE_TAG in the shell or a root .env file.
+name: circle
+
+x-backend-image: &backend-image ${ECR_REGISTRY:-019256649767.dkr.ecr.us-east-1.amazonaws.com}/my-app-backend:${IMAGE_TAG:-latest}
+
 services:
-  # ====== BACKEND ======
-  backend:
-    image: 019256649767.dkr.ecr.us-east-1.amazonaws.com/my-app-backend:latest
-    container_name: backend-main
+  api:
+    image: *backend-image
+    container_name: circle-api
+    command: ["node", "src/server.js"]
+    env_file: ./backend/.env
+    environment:
+      NODE_ENV: production
+      SERVICE_NAME: social-api
     ports:
-      - "5000:5000"
-    env_file:
-      - ./backend/.env
+      - "${API_PORT:-5000}:5000"
     restart: unless-stopped
-    networks:
-      - app-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5000/api/health"]
       interval: 30s
-      timeout: 10s
+      timeout: 5s
       retries: 3
-      start_period: 10s
+      start_period: 20s
 
-  # ====== EMAIL MICROSERVICE ======
-  email-microservice:
-    image: 019256649767.dkr.ecr.us-east-1.amazonaws.com/my-app-email:latest
-    container_name: backend-email
-    ports:
-      - "5001:5001"
-    env_file:
-      - ./backend/.env
+  worker:
+    image: *backend-image
+    container_name: circle-worker
+    command: ["node", "src/workers/index.js"]
+    env_file: ./backend/.env
+    environment:
+      NODE_ENV: production
+      SERVICE_NAME: social-worker
     restart: unless-stopped
-    networks:
-      - app-network
+    healthcheck:
+      disable: true
     depends_on:
-      backend:
+      api:
         condition: service_healthy
 
-  # ====== ANALYTICS WORKER ======
-  analytics-worker:
-    image: 019256649767.dkr.ecr.us-east-1.amazonaws.com/my-app-analytics-worker:latest
-    container_name: analytics-worker
-    env_file:
-      - ./backend/.env
+  email:
+    image: ${ECR_REGISTRY:-019256649767.dkr.ecr.us-east-1.amazonaws.com}/my-app-email:${IMAGE_TAG:-latest}
+    container_name: circle-email
+    env_file: ./email-microservice/.env
+    environment:
+      NODE_ENV: production
     restart: unless-stopped
-    networks:
-      - app-network
-    depends_on:
-      backend:
-        condition: service_healthy
-    command: node workers/analytics-worker.js
-
-  # ====== FEED WORKER ======
-  feed-worker:
-    image: 019256649767.dkr.ecr.us-east-1.amazonaws.com/my-app-feed-worker:latest
-    container_name: feed-worker
-    env_file:
-      - ./backend/.env
-    restart: unless-stopped
-    networks:
-      - app-network
-    depends_on:
-      backend:
-        condition: service_healthy
-    command: node workers/feed-worker.js
-
-networks:
-  app-network:
-    driver: bridge

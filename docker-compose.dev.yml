@@ -1,0 +1,93 @@
+# Local development stack: Postgres, Redis, RabbitMQ plus the API, workers and email service built from source.
+#   docker compose -f docker-compose.dev.yml up --build
+# The frontend runs separately with `npm run dev` inside ./frontend (it proxies /api to localhost:5000).
+name: circle-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: social
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      retries: 10
+
+  migrate:
+    build: ./backend
+    command: ["npx", "prisma", "migrate", "deploy"]
+    environment: &backend-env
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/social
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      JWT_ACCESS_SECRET: local-development-secret-change-me-please
+      APP_URL: http://localhost:5173
+      CORS_ORIGINS: http://localhost:5173
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-supabase}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build: ./backend
+    command: ["node", "src/server.js"]
+    environment: *backend-env
+    ports:
+      - "5000:5000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+
+  worker:
+    build: ./backend
+    command: ["node", "src/workers/index.js"]
+    environment:
+      <<: *backend-env
+      SERVICE_NAME: social-worker
+    healthcheck:
+      disable: true
+    depends_on:
+      api:
+        condition: service_started
+
+  email:
+    build: ./email-microservice
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      MAIL_TRANSPORT: log
+      APP_URL: http://localhost:5173
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+volumes:
+  pg-data:
