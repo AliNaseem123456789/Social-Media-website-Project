@@ -1,0 +1,8 @@
+<h1 style="margin:0 0 12px 0;font-size:22px;line-height:30px;letter-spacing:-0.02em;">{{#if pending}}An email change was requested{{else}}Your email address was changed{{/if}}</h1>
+<p style="margin:0;font-size:15px;line-height:24px;color:#58534a;">
+  Hi {{name}}, {{#if pending}}we were asked to move your account to <strong>{{newEmail}}</strong>. Nothing changes until that address is confirmed.{{else}}your account now signs in with <strong>{{newEmail}}</strong>, and every other session has been signed out.{{/if}}
+</p>
+<p style="margin:16px 0 0 0;font-size:15px;line-height:24px;color:#58534a;">
+  {{#if pending}}If this wasn't you, ignore the confirmation email and change your password.{{else}}If this wasn't you, reset your password to take the account back.{{/if}}
+</p>
+{{#if pending}}{{> button url=supportUrl label="Review your settings"}}{{else}}{{> button url=supportUrl label="Reset your password"}}{{/if}}
