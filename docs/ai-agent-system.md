@@ -122,7 +122,7 @@ npm start
 
 The multi-agent system uses an intent classifier to route user requests to specialized agents. Each agent handles specific tasks with different state management approaches.
 
-![Agentic Architecture](../assets/Agentic_Architecture.png)
+![Agentic Architecture](assets/Agentic_Architecture.png)
 
 *Figure 1: Multi-Agent System Architecture showing Intent Classifier and three specialized agents (Post, Friend, Engagement)*
 
@@ -138,7 +138,7 @@ The multi-agent system uses an intent classifier to route user requests to speci
 
 The RAG pipeline enables persistent user memory across conversations. It stores user information as vector embeddings and retrieves relevant context when needed.
 
-![RAG Architecture Diagram](../assets/RAG_Architecture_Diagram.png)
+![RAG Architecture Diagram](assets/RAG_Architecture_Diagram.png)
 
 *Figure 2: RAG Memory Pipeline showing Storage Phase, Retrieval Phase, Context Compression, and Response Generation*
 
