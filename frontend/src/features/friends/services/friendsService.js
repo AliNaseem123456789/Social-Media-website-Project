@@ -1,28 +1,12 @@
-import apiClient from "../../../api/apiClient";
+import { apiClient, unwrap } from "../../../lib/apiClient";
 
-export const friendService = {
-  getFriends: async () => {
-    const response = await apiClient.get(`/friends`);
-    return response.data;
-  },
-  sendRequest: async (recipientId) => {
-    const response = await apiClient.post("/friends/request", {
-      recipient_id: recipientId,
-    });
-    return response.data;
-  },
-  acceptRequest: async (requestId) => {
-    return await apiClient.put(`/friends/request/${requestId}/accept`);
-  },
-  getPendingRequests: async () => {
-    const response = await apiClient.get(`/friends/pending`);
-    return response.data;
-  },
-  respondToRequest: async (friendshipId, status) => {
-    const response = await apiClient.post("/friends/respond", {
-      friendship_id: friendshipId,
-      status: status,
-    });
-    return response.data;
-  },
+export const friendsService = {
+  list: (userId) => unwrap(apiClient.get("/friends", { params: userId ? { userId } : {} })),
+  requests: (direction = "incoming") => unwrap(apiClient.get("/friends/requests", { params: { direction } })),
+  suggestions: (limit = 8) => unwrap(apiClient.get("/friends/suggestions", { params: { limit } })),
+  status: (userId) => unwrap(apiClient.get(`/friends/status/${userId}`)),
+  send: (recipientId) => unwrap(apiClient.post("/friends/requests", { recipientId })),
+  respond: (requestId, action) => unwrap(apiClient.patch(`/friends/requests/${requestId}`, { action })),
+  cancel: (requestId) => apiClient.delete(`/friends/requests/${requestId}`),
+  unfriend: (userId) => apiClient.delete(`/friends/${userId}`),
 };

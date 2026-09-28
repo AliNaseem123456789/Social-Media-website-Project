@@ -1,43 +1,27 @@
-import React from "react";
 import { GoogleLogin } from "@react-oauth/google";
-import { useNavigate } from "react-router-dom";
-// import { authService } from "../services/authService";
-import { useAuth } from "../context/AuthContext";
+import { Box, Divider, Typography } from "@mui/material";
+import { env } from "../../../config/env";
 
-const GoogleButton = () => {
-  const navigate = useNavigate();
-  const { googleLogin } = useAuth(); 
-
-  const handleSuccess = async (credentialResponse) => {
-    try {
-       const result = await googleLogin(credentialResponse.credential);
-      // const data = await authService.googleLogin(credentialResponse.credential);
-
-      if (result.success) {
-        navigate("/home");
-      }
-    } catch (err) {
-      console.error("Google login service error:", err);
-    }
-  };
-
-  const handleError = () => {
-    console.error("Google Login Failed");
-  };
-
+export default function GoogleButton({ onCredential, onError, text = "continue_with" }) {
+  if (!env.googleClientId) {
+    if (env.isDev) console.warn("Google sign-in is hidden: set VITE_GOOGLE_CLIENT_ID in frontend/.env and restart the dev server.");
+    return null;
+  }
   return (
-    <div style={{ display: "flex", justifyContent: "center", width: "100%" }}>
-      <GoogleLogin
-        onSuccess={handleSuccess}
-        onError={handleError}
-        useOneTap
-        theme="outline"
-        shape="pill"
-        size="large"
-        // Note: Custom 'render' props are no longer supported in @react-oauth/google
-      />
-    </div>
+    <>
+      <Box sx={{ display: "flex", justifyContent: "center", "& > div": { width: "100%" } }}>
+        <GoogleLogin
+          onSuccess={(res) => onCredential(res.credential)}
+          onError={() => onError?.("Google sign-in was cancelled or failed")}
+          text={text}
+          shape="pill"
+          size="large"
+          width="360"
+        />
+      </Box>
+      <Divider sx={{ my: 2.5 }}>
+        <Typography variant="caption">or</Typography>
+      </Divider>
+    </>
   );
-};
-
-export default GoogleButton;
+}

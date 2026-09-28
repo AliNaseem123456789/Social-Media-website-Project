@@ -1,9 +1,3 @@
-// Place at: src/features/profile/data/countriesData.js
-//
-// Flags are rendered from Unicode regional-indicator symbols computed
-// from the ISO 3166-1 alpha-2 code below — no image assets or extra
-// npm package required, and they render natively on every modern OS.
-
 export function getFlagEmoji(countryCode) {
   if (!countryCode) return "";
   return countryCode

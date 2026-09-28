@@ -1,9 +1,3 @@
-// Place at: src/features/profile/data/hobbiesData.js
-//
-// Curated interest list for the profile "Interests" picker. Grouped by
-// category purely for a nicer dropdown (LinkedIn-style sectioned list) —
-// the picker also accepts anything typed that isn't in this list.
-
 export const HOBBY_CATEGORIES = {
   Sports: [
     "Cricket", "Football", "Basketball", "Tennis", "Badminton", "Table Tennis",
@@ -36,7 +30,6 @@ export const HOBBY_CATEGORIES = {
   ],
 };
 
-// Flattened { label, category } list — what the Autocomplete actually consumes.
 export const HOBBIES = Object.entries(HOBBY_CATEGORIES).flatMap(([category, items]) =>
   items.map((label) => ({ label, category }))
 );
