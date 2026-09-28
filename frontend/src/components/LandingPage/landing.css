@@ -8,7 +8,6 @@
    Everything is scoped under .lp-page so it never leaks into the app shell.
    ========================================================================== */
 
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap");
 
 .lp-page {
   --paper: #faf8f4;
@@ -27,8 +26,8 @@
   --dark-line: rgba(250, 248, 244, 0.12);
   --dark-ink-soft: rgba(250, 248, 244, 0.66);
 
-  --font-display: "Fraunces", "Iowan Old Style", serif;
-  --font-body: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: "Fraunces Variable", "Fraunces", "Iowan Old Style", serif;
+  --font-body: "Inter Variable", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 
   --container: 1180px;

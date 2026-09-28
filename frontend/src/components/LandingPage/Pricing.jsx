@@ -47,7 +47,7 @@ const plans = [
   },
 ];
 
-export function Pricing() {
+export function Pricing({ onSignup }) {
   return (
     <section className="lp-section-pad lp-pricing" id="pricing">
       <div className="lp-wrap">
@@ -85,6 +85,7 @@ export function Pricing() {
               </ul>
               <div className="lp-plan__foot">
                 <button
+                  onClick={onSignup}
                   className={`lp-btn lp-btn--full ${
                     plan.featured ? "lp-btn--primary" : "lp-btn--on-dark"
                   }`}
