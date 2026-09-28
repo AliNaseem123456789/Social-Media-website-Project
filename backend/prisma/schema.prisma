@@ -1,0 +1,448 @@
+// Existing tables are shared with other clients (legacy app, chatbot) that read and write them directly.
+// Table and column names must stay unchanged: models use @@map / @map, and migrations are additive only.
+// Fields marked "verify" were inferred from application code; confirm them against the live database
+// (see docs/database.md) before running migrations.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String
+  email     String   @unique
+  password  String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  profile          UserProfile?
+  authState        UserAuthState?
+  posts            Post[]
+  comments         Comment[]
+  likes            Like[]
+  sentRequests     Friendship[]    @relation("FriendshipRequester")
+  receivedRequests Friendship[]    @relation("FriendshipRecipient")
+  sessions         AuthSession[]
+  authTokens       AuthToken[]
+  auditLogs        AuditLog[]
+  notifications    Notification[]  @relation("NotificationRecipient")
+  commentLikes     CommentLike[]
+  savedPosts       PostSave[]
+  followers        Follow[]        @relation("Followers")
+  following        Follow[]        @relation("Following")
+  settings         UserSettings?
+  drafts           PostDraft[]
+  callsMade        CallLog[]       @relation("CallsMade")
+  callsReceived    CallLog[]       @relation("CallsReceived")
+  conversations    ConversationMember[]
+  sentMessages     ConversationMessage[]
+  blocking         Block[]         @relation("Blocking")
+  blockedBy        Block[]         @relation("BlockedBy")
+  reportsMade      Report[]        @relation("ReportsMade")
+
+  @@map("users")
+}
+
+model UserProfile {
+  userId              Int       @id @map("user_id")
+  username            String?
+  bio                 String?
+  gender              String?
+  age                 Int?      // verify: integer vs text
+  country             String?
+  education           String?
+  hobbies             String?   // comma separated labels
+  profileImage        String?   @map("profile_image")
+  coverImage          String?   @map("cover_image")
+  onboardingCompleted Boolean?  @default(false) @map("onboarding_completed")
+  updatedAt           DateTime? @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model Post {
+  id            Int       @id @default(autoincrement()) @map("post_id")
+  userId        Int       @map("user_id")
+  content       String?
+  imageUrl      String?   @map("image_url")
+  totalLikes    Int       @default(0) @map("total_likes")
+  totalComments Int       @default(0) @map("total_comments")
+  isPinned      Boolean   @default(false) @map("is_pinned")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime? @map("updated_at") @db.Timestamptz(6)
+
+  author     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments   Comment[]
+  likes      Like[]
+  saves      PostSave[]
+  images     PostImage[]
+  hashtags   PostHashtag[]
+  reference  PostReference?  @relation("RepostSource")
+  repostedBy PostReference[] @relation("RepostTarget")
+
+  @@map("posts")
+}
+
+model PostSave {
+  userId    Int      @map("user_id")
+  postId    Int      @map("post_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([userId, postId])
+  @@map("post_saves")
+}
+
+model PostReference {
+  postId           Int      @id @map("post_id")
+  referencedPostId Int      @map("referenced_post_id")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  post       Post @relation("RepostSource", fields: [postId], references: [id], onDelete: Cascade)
+  referenced Post @relation("RepostTarget", fields: [referencedPostId], references: [id], onDelete: Cascade)
+
+  @@map("post_references")
+}
+
+model PostHashtag {
+  postId Int    @map("post_id")
+  tag    String
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tag])
+  @@map("post_hashtags")
+}
+
+model PostImage {
+  id       Int     @id @default(autoincrement())
+  postId   Int     @map("post_id")
+  url      String
+  alt      String?
+  position Int     @default(0)
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("post_images")
+}
+
+model Follow {
+  followerId  Int      @map("follower_id")
+  followingId Int      @map("following_id")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  follower  User @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Followers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+  @@map("follows")
+}
+
+model UserSettings {
+  userId                Int      @id @map("user_id")
+  profileVisibility     String   @default("public") @map("profile_visibility")
+  allowMessagesFrom     String   @default("everyone") @map("allow_messages_from")
+  emailOnLike           Boolean  @default(true) @map("email_on_like")
+  emailOnComment        Boolean  @default(true) @map("email_on_comment")
+  emailOnFriendRequest  Boolean  @default(true) @map("email_on_friend_request")
+  emailOnMessage        Boolean  @default(true) @map("email_on_message")
+  emailOnMention        Boolean  @default(true) @map("email_on_mention")
+  theme                 String   @default("system")
+  updatedAt             DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+model PostDraft {
+  id              Int       @id @default(autoincrement())
+  userId          Int       @map("user_id")
+  content         String?
+  imageUrls       Json      @default("[]") @map("image_urls")
+  scheduledFor    DateTime? @map("scheduled_for") @db.Timestamptz(6)
+  publishedPostId Int?      @map("published_post_id")
+  publishedAt     DateTime? @map("published_at") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("post_drafts")
+}
+
+model CallLog {
+  id         Int       @id @default(autoincrement())
+  roomId     String    @unique @map("room_id")
+  callerId   Int       @map("caller_id")
+  calleeId   Int       @map("callee_id")
+  video      Boolean   @default(true)
+  status     String    @default("ringing")
+  startedAt  DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  answeredAt DateTime? @map("answered_at") @db.Timestamptz(6)
+  endedAt    DateTime? @map("ended_at") @db.Timestamptz(6)
+
+  caller User @relation("CallsMade", fields: [callerId], references: [id], onDelete: Cascade)
+  callee User @relation("CallsReceived", fields: [calleeId], references: [id], onDelete: Cascade)
+
+  @@map("call_logs")
+}
+
+model Conversation {
+  id            Int       @id @default(autoincrement())
+  type          String    @default("direct")
+  title         String?
+  imageUrl      String?   @map("image_url")
+  directKey     String?   @unique @map("direct_key")
+  createdBy     Int?      @map("created_by")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastMessageAt DateTime? @map("last_message_at") @db.Timestamptz(6)
+
+  members  ConversationMember[]
+  messages ConversationMessage[]
+
+  @@map("chat_threads")
+}
+
+model ConversationMember {
+  conversationId    Int      @map("conversation_id")
+  userId            Int      @map("user_id")
+  role              String   @default("member")
+  joinedAt          DateTime @default(now()) @map("joined_at") @db.Timestamptz(6)
+  lastReadMessageId BigInt?  @map("last_read_message_id")
+  muted             Boolean  @default(false)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@map("chat_thread_members")
+}
+
+model ConversationMessage {
+  id              BigInt    @id @default(autoincrement())
+  conversationId  Int       @map("conversation_id")
+  senderId        Int?      @map("sender_id")
+  body            String?
+  imageUrl        String?   @map("image_url")
+  legacyMessageId Int?      @unique @map("legacy_message_id")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  editedAt        DateTime? @map("edited_at") @db.Timestamptz(6)
+  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User?        @relation(fields: [senderId], references: [id], onDelete: SetNull)
+
+  @@map("chat_messages")
+}
+
+model Comment {
+  id        Int       @id @default(autoincrement()) @map("comment_id")
+  postId    Int       @map("post_id")
+  userId    Int       @map("user_id")
+  text      String    @map("comment_text")
+  parentId  Int?      @map("parent_comment_id")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime? @map("updated_at") @db.Timestamptz(6)
+
+  post    Post          @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent  Comment?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies Comment[]     @relation("CommentReplies")
+  likes   CommentLike[]
+
+  @@map("comments")
+}
+
+model CommentLike {
+  commentId Int      @map("comment_id")
+  userId    Int      @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([commentId, userId])
+  @@map("comment_likes")
+}
+
+model Like {
+  id        Int      @id @default(autoincrement()) @map("like_id")
+  userId    Int      @map("user_id")
+  postId    Int      @map("post_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("likes")
+}
+
+model Friendship {
+  id          Int    @id @default(autoincrement()) @map("friendship_id")
+  requesterId Int    @map("requester_id")
+  recipientId Int    @map("recipient_id")
+  status      String // pending | accepted | rejected
+
+  requester User @relation("FriendshipRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  recipient User @relation("FriendshipRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@map("friends")
+}
+
+model Message {
+  id        Int      @id @default(autoincrement()) // verify: primary key name/type
+  fromUser  Int      @map("from_user")
+  toUser    Int      @map("to_user")
+  username  String?
+  message   String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("messages")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement()) // verify: integer vs uuid
+  userId    Int      @map("user_id")
+  type      String
+  actorId   Int?     @map("actor_id")
+  actorName String?  @map("actor_name")
+  targetId  Int?     @map("target_id")
+  content   String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  recipient User @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model UserStats {
+  userId                Int       @id @map("user_id")
+  totalPosts            Int       @default(0) @map("total_posts")
+  totalLikesReceived    Int       @default(0) @map("total_likes_received")
+  totalCommentsReceived Int       @default(0) @map("total_comments_received")
+  totalFriends          Int       @default(0) @map("total_friends")
+  updatedAt             DateTime? @map("updated_at") @db.Timestamptz(6)
+
+  @@map("user_stats")
+}
+
+model AnalyticsEvent {
+  id        Int      @id @default(autoincrement()) // verify: primary key name/type
+  userId    Int?     @map("user_id")
+  eventType String   @map("event_type")
+  eventData Json?    @map("event_data")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("analytics_events")
+}
+
+// ---- Tables introduced by the v2 backend (created by migration 1_auth_security) ----
+
+model AuthSession {
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            Int       @map("user_id")
+  refreshTokenHash  String    @map("refresh_token_hash")
+  previousTokenHash String?   @map("previous_token_hash")
+  userAgent         String?   @map("user_agent")
+  ipAddress         String?   @map("ip_address")
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  lastUsedAt        DateTime  @default(now()) @map("last_used_at") @db.Timestamptz(6)
+  expiresAt         DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt         DateTime? @map("revoked_at") @db.Timestamptz(6)
+  revokedReason     String?   @map("revoked_reason")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("auth_sessions")
+}
+
+model AuthToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    Int       @map("user_id")
+  type      String    // email_verification | password_reset | email_change
+  tokenHash String    @unique @map("token_hash")
+  payload   Json?     // email_change stores the address the token would move the account to
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@map("auth_tokens")
+}
+
+model UserAuthState {
+  userId            Int       @id @map("user_id")
+  emailVerifiedAt   DateTime? @map("email_verified_at") @db.Timestamptz(6)
+  passwordChangedAt DateTime? @map("password_changed_at") @db.Timestamptz(6)
+  failedLoginCount  Int       @default(0) @map("failed_login_count")
+  lockedUntil       DateTime? @map("locked_until") @db.Timestamptz(6)
+  lastLoginAt       DateTime? @map("last_login_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_auth_state")
+}
+
+model AuditLog {
+  id        BigInt   @id @default(autoincrement())
+  userId    Int?     @map("user_id")
+  action    String
+  status    String   @default("success")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}
+
+model Block {
+  blockerId Int      @map("blocker_id")
+  blockedId Int      @map("blocked_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  blocker User @relation("Blocking", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("BlockedBy", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@id([blockerId, blockedId])
+  @@index([blockedId])
+  @@map("blocks")
+}
+
+model Report {
+  id            BigInt    @id @default(autoincrement())
+  reporterId    Int       @map("reporter_id")
+  subjectType   String    @map("subject_type") // post | comment | user | message
+  subjectId     BigInt    @map("subject_id")
+  subjectUserId Int?      @map("subject_user_id")
+  reason        String
+  details       String?
+  status        String    @default("open") // open | reviewing | actioned | dismissed
+  resolution    String?
+  reviewedBy    Int?      @map("reviewed_by")
+  reviewedAt    DateTime? @map("reviewed_at") @db.Timestamptz(6)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  reporter User @relation("ReportsMade", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([subjectType, subjectId])
+  @@map("reports")
+}
