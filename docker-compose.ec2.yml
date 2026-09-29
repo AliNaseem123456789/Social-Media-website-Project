@@ -1,0 +1,114 @@
+# Everything that runs on one small EC2 instance: the API with its workers embedded, the email
+# service, Redis, and Caddy in front for TLS. Images are built on the instance from this checkout,
+# so there is no registry and no pipeline involved.
+#
+#   docker compose -f docker-compose.ec2.yml up -d --build
+#
+# Postgres is Supabase and RabbitMQ is CloudAMQP, so neither runs here: DATABASE_URL and
+# RABBITMQ_URL in backend/.env point at them. Run scripts/ec2-bootstrap.sh before the first build,
+# because building these images needs more memory than a t3.micro has without swap.
+#
+# Memory limits are sized for a 1 GB instance and total less than it on purpose. Raise them together
+# if you move to a larger one.
+name: circle
+
+services:
+  api:
+    build: ./backend
+    container_name: circle-api
+    env_file: ./backend/.env
+    environment:
+      NODE_ENV: production
+      SERVICE_NAME: social-api
+      PORT: 5000
+      # Redis is a sibling container, so this overrides whatever backend/.env says.
+      REDIS_URL: redis://redis:6379
+      # One process instead of two. A separate worker container costs another ~200 MB, which this
+      # instance does not have; the consumers run inside the API instead.
+      EMBEDDED_WORKERS: notifications,feed,analytics,scheduler
+      # Node sizes its heap against total machine memory, which overshoots badly here.
+      NODE_OPTIONS: --max-old-space-size=320
+      # Caddy is the single proxy hop in front.
+      TRUST_PROXY: 1
+    expose:
+      - "5000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    mem_limit: 480m
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  email:
+    build: ./email-microservice
+    container_name: circle-email
+    env_file: ./email-microservice/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5001
+      NODE_OPTIONS: --max-old-space-size=96
+    expose:
+      - "5001"
+    restart: unless-stopped
+    mem_limit: 160m
+    logging: *logging
+
+  redis:
+    image: redis:7-alpine
+    container_name: circle-redis
+    # A cache, not a database: no persistence, and a hard ceiling with LRU eviction so it can never
+    # grow into the memory the API needs.
+    command:
+      - redis-server
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+      - --maxmemory
+      - 64mb
+      - --maxmemory-policy
+      - allkeys-lru
+    expose:
+      - "6379"
+    restart: unless-stopped
+    mem_limit: 96m
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    logging: *logging
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: circle-caddy
+    # The only container with published ports. Everything else is reachable only inside this network.
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?set API_DOMAIN in .env next to this file}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env next to this file}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - api
+    restart: unless-stopped
+    mem_limit: 96m
+    logging: *logging
+
+volumes:
+  caddy-data:
+  caddy-config:

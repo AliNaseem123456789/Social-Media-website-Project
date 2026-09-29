@@ -14,7 +14,83 @@ Every variable is documented in each service's `.env.example`.
 
 **Behind a proxy.** Keep `TRUST_PROXY=1` (one hop, e.g. nginx) so rate limits and audit logs see the real client IP.
 
-## AWS EC2 (CodeBuild + CodeDeploy)
+## AWS EC2, one instance, built on the box
+
+Four containers, defined in `docker-compose.ec2.yml`: the **API** with its workers embedded, the
+**email service**, **Redis**, and **Caddy** terminating TLS in front. Postgres is Supabase and
+RabbitMQ is CloudAMQP, so neither runs here — `DATABASE_URL` and `RABBITMQ_URL` point off the box.
+
+### Why it is shaped this way
+
+Measured resident memory of each piece:
+
+| | resident |
+| --- | --- |
+| API (node + Prisma) | 218 MB |
+| worker as its own process | 206 MB |
+| email service | 96 MB |
+| Redis | 7 MB |
+| RabbitMQ, if self-hosted | 124 MB |
+
+A `t3.micro` gives about 960 MB, and the OS plus dockerd take roughly 250 MB of it. Three decisions
+follow:
+
+- **The workers run inside the API process** (`EMBEDDED_WORKERS`), not as a second container. That is
+  the largest single saving available.
+- **Swap is mandatory.** `scripts/ec2-bootstrap.sh` creates 4 GB. Building the backend image needs
+  more memory than the instance has, and without swap the build is killed with no clear error.
+- **Every container has a `mem_limit`, and Node has `--max-old-space-size`.** Node otherwise sizes its
+  heap against total machine memory and overshoots on a box this small.
+
+### First run
+
+```bash
+sudo ./scripts/ec2-bootstrap.sh     # docker, compose plugin, 4 GB swap, log caps
+# copy backend/.env.example -> backend/.env and fill it in
+# copy email-microservice/.env.example -> email-microservice/.env and fill it in
+printf 'API_DOMAIN=api.example.com\nACME_EMAIL=you@example.com\n' > .env
+./scripts/ec2-deploy.sh
+```
+
+Before that last command: point `API_DOMAIN`'s DNS A record at the instance's public IP, and open
+**only 22, 80 and 443** in the security group. Caddy cannot get a certificate until the domain
+resolves and 80 is reachable. Redis is never published — it is reachable only on the compose network.
+
+### Deploying an update
+
+```bash
+./scripts/ec2-deploy.sh --pull
+```
+
+It pulls, rebuilds what changed, runs `prisma migrate deploy` inside the API image, restarts the
+containers, prunes old layers, waits for the health check and prints the database doctor's summary.
+Re-running it is safe; the migrations are additive and idempotent.
+
+### Operating it
+
+```bash
+docker compose -f docker-compose.ec2.yml ps
+docker compose -f docker-compose.ec2.yml logs -f api
+docker stats --no-stream
+free -h
+docker exec circle-api npm run db:doctor
+```
+
+Watch two things on an instance this size: `free -h` (if swap use climbs past a few hundred MB under
+normal traffic, the box is too small) and CPU credit balance in CloudWatch, since `t3` instances
+throttle hard once credits run out.
+
+To roll back, check out the previous commit and re-run the deploy script. Images are built on the box,
+so there is no registry tag to point back at — if you want that, use the pipeline below instead.
+
+### Talking to the frontend
+
+The frontend on Vercel is a different site from the API, so the refresh cookie needs
+`COOKIE_SECURE=true` and `COOKIE_SAMESITE=none`, `CORS_ORIGINS` must list the exact Vercel origin, and
+`VITE_API_URL` on Vercel must be `https://API_DOMAIN`. `TRUST_PROXY=1` is already set in the compose
+file, because Caddy is the one proxy hop in front of the API.
+
+## AWS EC2 with a pipeline (CodeBuild + CodeDeploy)
 
 1. **CodeBuild** runs `buildspec.yml`. It builds two images, `my-app-backend` (API and worker) and `my-app-email`, pushes both with `latest` and the commit tag, and writes `.deploy.env` with the registry and tag.
 2. **CodeDeploy** copies the bundle to `/home/ubuntu/app` (`appspec.yml`) and runs:

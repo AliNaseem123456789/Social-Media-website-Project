@@ -1,0 +1,23 @@
+# TLS for the API. Caddy requests a Let's Encrypt certificate on first start and renews it on its
+# own, so there is no certbot and no cron job to remember. API_DOMAIN must already resolve to this
+# instance and ports 80 and 443 must be open, or the challenge fails.
+
+{
+	email {$ACME_EMAIL}
+}
+
+{$API_DOMAIN} {
+	encode zstd gzip
+
+	# Socket.IO upgrades pass through untouched; Caddy proxies WebSockets without extra config.
+	reverse_proxy api:5000 {
+		health_uri /api/health
+		health_interval 30s
+		health_timeout 5s
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}
