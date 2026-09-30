@@ -27,5 +27,6 @@ export const cacheKeys = {
   userStats: (userId) => p("stats", "user", userId),
   trending: () => p("analytics", "trending"),
   revokedSession: (sessionId) => p("auth", "revoked", sessionId),
+  queryEmbedding: (hash) => p("embed", "query", hash),
   rateLimit: () => p("ratelimit", ""),
 };

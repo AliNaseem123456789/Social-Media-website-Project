@@ -10,6 +10,7 @@ import { invalidateBlocks, blockDirection } from "#shared/blocks.js";
 import { audit } from "#modules/auth/audit.service.js";
 import { AUDIT } from "#modules/auth/auth.constants.js";
 import { moderationRepository } from "./moderation.repository.js";
+import { triageReport } from "./triage.js";
 
 const log = childLogger("moderation");
 const blockCursor = z.object({ at: z.string(), id: z.number().int() });
@@ -34,6 +35,15 @@ const toReport = (row) => ({
   reviewedAt: row.reviewedAt,
   createdAt: row.createdAt,
   reporter: toUserSummary(row.reporter),
+  triage: row.triagedAt
+    ? {
+        verdict: row.triageVerdict,
+        confidence: row.triageConfidence,
+        reason: row.triageReason,
+        source: row.triageSource,
+        at: row.triagedAt,
+      }
+    : null,
 });
 
 async function clearCachesFor(...userIds) {
@@ -103,7 +113,13 @@ export const moderationService = {
       details: details || null,
     });
 
-    if (created) log.info({ reportId: Number(id), subjectType, subjectId }, "content reported");
+    if (created) {
+      log.info({ reportId: Number(id), subjectType, subjectId }, "content reported");
+      // Deliberately not awaited. The person reporting gets their answer now; making them wait on a
+      // model call is a good way to stop people reporting things at all. If it fails the report is
+      // left untriaged and the backfill pass picks it up.
+      triageReport(Number(id), { subjectType, subjectId, reason }).catch(() => {});
+    }
     return {
       reported: true,
       alreadyReported: !created,

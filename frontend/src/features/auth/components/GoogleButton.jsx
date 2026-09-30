@@ -1,6 +1,7 @@
 import { GoogleLogin } from "@react-oauth/google";
 import { Box, Divider, Typography } from "@mui/material";
 import { env } from "../../../config/env";
+import { tokens } from "../../../theme/tokens";
 
 export default function GoogleButton({ onCredential, onError, text = "continue_with" }) {
   if (!env.googleClientId) {
@@ -20,7 +21,17 @@ export default function GoogleButton({ onCredential, onError, text = "continue_w
         />
       </Box>
       <Divider sx={{ my: 2.5 }}>
-        <Typography variant="caption">or</Typography>
+        <Typography
+          sx={{
+            fontFamily: tokens.fontMono,
+            fontSize: 11,
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+            color: "text.disabled",
+          }}
+        >
+          or
+        </Typography>
       </Divider>
     </>
   );

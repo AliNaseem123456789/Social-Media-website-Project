@@ -6,7 +6,10 @@ import { useCreateDraft, useCreatePost, useUpdateDraft, useUpdatePost } from "..
 import DraftsLink from "./DraftsLink";
 import PostForm from "./PostForm";
 
-export default function PostEditorDialog({ open, post, draft, onClose }) {
+// `initialContent` only seeds the box for a brand new post — it is what the assistant uses to hand
+// over a draft it wrote. Passing `draft` instead would mark this as editing an existing draft and
+// send the save to a draft id that does not exist.
+export default function PostEditorDialog({ open, post, draft, initialContent = "", onClose }) {
   const { user } = useAuth();
   const create = useCreatePost();
   const update = useUpdatePost();
@@ -60,7 +63,7 @@ export default function PostEditorDialog({ open, post, draft, onClose }) {
         <PostForm
           autoFocus
           minRows={4}
-          initialContent={draft?.content || post?.content || ""}
+          initialContent={draft?.content || post?.content || initialContent}
           initialImageUrl={post?.imageUrl || null}
           initialImages={
             editingDraft

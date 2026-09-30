@@ -86,6 +86,14 @@ const schema = z.object({
   FEED_SIZE: z.coerce.number().int().positive().default(300),
   FEED_TTL_SECONDS: duration.default(3600),
   ENABLE_LEGACY_GRAPHQL: bool(false),
+  // The Python assistant service. Embeddings are produced there because that is where the model
+  // clients live; this process is the only one that writes them to the database.
+  ASSISTANT_URL: z.string().url().optional(),
+  ASSISTANT_INTERNAL_SECRET: z.string().min(16).optional(),
+  ASSISTANT_TIMEOUT_MS: duration.default(8000),
+  SEMANTIC_SEARCH: bool(false),
+  EMBED_DIMENSIONS: z.coerce.number().int().min(64).max(3072).default(768),
+  EMBED_BATCH_SIZE: z.coerce.number().int().min(1).max(100).default(20),
   WORKERS: list("notifications,feed,analytics,scheduler"),
   EMBEDDED_WORKERS: list(""),
 });
@@ -180,6 +188,16 @@ export const config = Object.freeze({
     turnUrls: env.TURN_URLS,
     turnSecret: env.TURN_SECRET,
     turnTtlSeconds: env.TURN_TTL_SECONDS,
+  },
+  assistant: {
+    url: env.ASSISTANT_URL?.replace(/\/$/, "") ?? null,
+    internalSecret: env.ASSISTANT_INTERNAL_SECRET ?? null,
+    timeoutMs: env.ASSISTANT_TIMEOUT_MS,
+    // Semantic search needs somewhere to get vectors from, so asking for it without the service
+    // configured is a mistake worth naming at boot rather than a silently empty result set.
+    semanticSearch: env.SEMANTIC_SEARCH,
+    embedDimensions: env.EMBED_DIMENSIONS,
+    embedBatchSize: env.EMBED_BATCH_SIZE,
   },
   legacyGraphql: env.ENABLE_LEGACY_GRAPHQL,
   workers: env.WORKERS,

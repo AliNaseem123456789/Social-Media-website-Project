@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.py[cod]
+.env
+.pytest_cache/
+.ruff_cache/
+
+# Eval results are local artefacts; the case set is the thing worth versioning.
+evals/runs/

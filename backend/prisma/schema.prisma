@@ -440,9 +440,18 @@ model Report {
   reviewedAt    DateTime? @map("reviewed_at") @db.Timestamptz(6)
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
+  // A model's opinion of how urgent this is, so the queue can be worked most-urgent-first. Advisory
+  // only: nothing acts on it, and `status` above is still the only thing that decides what happens.
+  triageVerdict    String?   @map("triage_verdict") // allow | review | remove
+  triageConfidence Float?    @map("triage_confidence")
+  triageReason     String?   @map("triage_reason")
+  triageSource     String?   @map("triage_source") // rules | model | error
+  triagedAt        DateTime? @map("triaged_at") @db.Timestamptz(6)
+
   reporter User @relation("ReportsMade", fields: [reporterId], references: [id], onDelete: Cascade)
 
   @@index([status, createdAt])
   @@index([subjectType, subjectId])
+  @@index([status, triageVerdict, createdAt])
   @@map("reports")
 }

@@ -36,6 +36,25 @@ const TABS = [
   { value: "dismissed", label: "Dismissed", emptyTitle: "Nothing dismissed yet", emptyDescription: "Reports you dismiss are kept here for the record." },
 ];
 
+/**
+ * Triage puts a model's opinion of urgency on a report. It is advisory and nothing acts on it — the
+ * verdict only decides where in the queue a moderator sees it. Wording matters here: "Looks serious"
+ * describes a guess, where "Remove" would read as an instruction the moderator is expected to follow.
+ */
+const TRIAGE_CHIP = {
+  remove: { label: "Looks serious", bgcolor: tokens.emberTint, color: tokens.emberInk },
+  review: { label: "Needs a look", bgcolor: tokens.surfaceMuted, color: tokens.inkSoft },
+  allow: { label: "Probably fine", bgcolor: tokens.signalTint, color: tokens.ink },
+};
+
+const VERDICT_FILTERS = [
+  { value: "all", label: "Everything" },
+  { value: "remove", label: "Looks serious" },
+  { value: "review", label: "Needs a look" },
+  { value: "allow", label: "Probably fine" },
+  { value: "untriaged", label: "Not yet checked" },
+];
+
 const STATUS_CHIP = {
   open: { label: "Open", bgcolor: tokens.emberTint, color: tokens.emberInk },
   reviewing: { label: "Reviewing", bgcolor: tokens.signalTint, color: tokens.ink },
@@ -165,6 +184,8 @@ function ReportRow({ report }) {
 
   const noun = subjectNoun(report.subjectType);
   const status = STATUS_CHIP[report.status] ?? STATUS_CHIP.open;
+  const verdict = TRIAGE_CHIP[report.triage?.verdict];
+  const triage = verdict ? { ...verdict, ...report.triage } : null;
   const pending = resolve.isPending;
   const decided = report.status === "actioned" || report.status === "dismissed";
   const removable = Boolean(report.subject) && report.subject.kind !== "user";
@@ -189,6 +210,16 @@ function ReportRow({ report }) {
           sx={{ bgcolor: tokens.emberTint, color: tokens.emberInk, fontWeight: 600 }}
         />
         <Chip size="small" label={status.label} sx={{ bgcolor: status.bgcolor, color: status.color }} />
+        {triage ? (
+          <Tooltip title={`${triage.reason || "No reason given"} — ${triage.source === "rules" ? "matched a rule" : "a model's guess, not a decision"}`}>
+            <Chip
+              size="small"
+              variant="outlined"
+              label={triage.label}
+              sx={{ bgcolor: triage.bgcolor, color: triage.color, borderColor: "transparent" }}
+            />
+          </Tooltip>
+        ) : null}
         <Typography variant="caption" sx={{ ml: "auto" }}>
           <Tooltip title={fullDate(report.createdAt)}>
             <span>{timeAgo(report.createdAt)}</span>
@@ -341,7 +372,19 @@ export default function ModerationQueuePage() {
 
   const requested = search.get("status");
   const tab = TABS.find((t) => t.value === requested) ?? TABS[0];
-  const reports = useReports(tab.value, { enabled: isModerator });
+  const verdict = VERDICT_FILTERS.find((f) => f.value === search.get("verdict"))?.value ?? "all";
+  const reports = useReports(tab.value, verdict, { enabled: isModerator });
+
+  // Both selections live in the URL, so a moderator can keep "open + looks serious" bookmarked rather
+  // than setting it again every morning.
+  const setFilters = (next) => {
+    const params = {};
+    const status = next.status ?? tab.value;
+    const chosen = next.verdict ?? verdict;
+    if (status !== "open") params.status = status;
+    if (chosen !== "all") params.verdict = chosen;
+    setSearch(params, { replace: true });
+  };
 
   useDocumentTitle("Moderation");
 
@@ -391,7 +434,7 @@ export default function ModerationQueuePage() {
 
       <Tabs
         value={tab.value}
-        onChange={(_, value) => setSearch(value === "open" ? {} : { status: value }, { replace: true })}
+        onChange={(_, value) => setFilters({ status: value })}
         variant="scrollable"
         allowScrollButtonsMobile
         aria-label="Report status"
@@ -401,6 +444,23 @@ export default function ModerationQueuePage() {
           <Tab key={t.value} value={t.value} label={t.label} />
         ))}
       </Tabs>
+
+      <Stack direction="row" sx={{ flexWrap: "wrap", gap: 0.75, mb: 2 }}>
+        {VERDICT_FILTERS.map((filter) => (
+          <Chip
+            key={filter.value}
+            size="small"
+            label={filter.label}
+            variant={verdict === filter.value ? "filled" : "outlined"}
+            onClick={() => setFilters({ verdict: filter.value })}
+            sx={
+              verdict === filter.value
+                ? { bgcolor: tokens.ink, color: tokens.onInk }
+                : { borderColor: tokens.line, color: tokens.inkSoft }
+            }
+          />
+        ))}
+      </Stack>
 
       {reports.isLoading && <QueueSkeleton />}
 

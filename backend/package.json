@@ -26,7 +26,9 @@
     "db:baseline": "prisma migrate resolve --applied 0_baseline",
     "postinstall": "prisma generate",
     "storage:check": "node scripts/check-storage.js",
-    "db:doctor": "node scripts/db-doctor.js"
+    "db:doctor": "node scripts/db-doctor.js",
+    "verify:rrf": "node scripts/verify-rrf.js",
+    "verify:assistant": "node scripts/verify-assistant-client.js"
   },
   "dependencies": {
     "@apollo/server": "^5.5.1",

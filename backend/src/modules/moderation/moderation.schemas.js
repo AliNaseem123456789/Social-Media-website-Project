@@ -11,6 +11,9 @@ export const listQuery = z.object({ ...cursorQuery });
 export const reportsQuery = z.object({
   ...cursorQuery,
   status: z.enum(["open", "reviewing", "actioned", "dismissed", "all"]).default("open"),
+  // Narrows the queue to what triage flagged. "untriaged" is its own answer rather than a synonym for
+  // safe: it means nothing has looked at it yet.
+  verdict: z.enum(["remove", "review", "allow", "untriaged", "all"]).default("all"),
 });
 
 export const REPORT_REASONS = [

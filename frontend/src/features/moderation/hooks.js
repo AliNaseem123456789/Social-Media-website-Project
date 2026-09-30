@@ -94,10 +94,10 @@ export function useModeratorAccess() {
   });
 }
 
-export function useReports(status, options = {}) {
+export function useReports(status, verdict = "all", options = {}) {
   const list = useInfiniteList(
-    queryKeys.reports(status),
-    (cursor) => moderationService.reports({ status, cursor, limit: REPORT_PAGE }),
+    queryKeys.reports(status, verdict),
+    (cursor) => moderationService.reports({ status, verdict, cursor, limit: REPORT_PAGE }),
     options,
   );
   return { ...list, openCount: list.data?.pages?.[0]?.openCount ?? 0 };

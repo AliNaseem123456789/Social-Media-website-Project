@@ -1,141 +1,105 @@
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
+import { ArrowDown, Bell, UserPlus } from "lucide-react";
+import { ConnectionField } from "./ConnectionField";
+import { AppDemo } from "./demo/AppDemo";
 
-const initials = ["M", "J", "R", "K"];
-const colors = ["#e0431f", "#1c7a54", "#4a463f", "#c93a19"];
+const enter = (delay = 0) => ({
+  initial: { opacity: 0, y: 18 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.65, delay, ease: [0.22, 1, 0.36, 1] },
+});
 
 export function Hero({ onLogin, onSignup }) {
+  const reduced = useReducedMotion();
+  const float = (distance, seconds, delay = 0) =>
+    reduced
+      ? {}
+      : {
+          animate: { y: [0, -distance, 0] },
+          transition: { duration: seconds, repeat: Infinity, ease: "easeInOut", delay },
+        };
+
   return (
     <section className="lp-hero" id="top">
+      <ConnectionField />
+
       <div className="lp-wrap lp-hero__inner">
-        <div>
-          <motion.span
-            className="lp-eyebrow"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <span className="lp-hero__dot" style={{ background: "#e0431f" }} />
-            4,200+ people are active right now
+        <div className="lp-hero__copy">
+          <motion.span className="lp-eyebrow" {...enter(0)}>
+            <span className="lp-hero__dot" />
+            Free to use, no ads
           </motion.span>
 
-          <motion.h1
-            className="lp-hero__title"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.05 }}
-          >
-            The internet, but it <em>remembers</em> your friends.
+          <motion.h1 className="lp-hero__title" {...enter(0.05)}>
+            Post it. Say it. <em>Call</em> about it.
           </motion.h1>
 
-          <motion.p
-            className="lp-hero__subtitle"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-          >
-            Circle is where conversations, communities, and the people you
-            care about actually stay connected — real-time chat, groups built
-            around shared interests, and a feed that learns what matters to you.
+          <motion.p className="lp-hero__subtitle" {...enter(0.12)}>
+            Circle keeps the feed, the group chat and the video call in one place, so a conversation
+            doesn't start over every time it moves.
           </motion.p>
 
-          <motion.div
-            className="lp-hero__actions"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.15 }}
-          >
+          <motion.div className="lp-hero__actions" {...enter(0.18)}>
             <button className="lp-btn lp-btn--primary" onClick={onSignup}>
-              Create your account
+              Create an account
             </button>
             <button className="lp-btn lp-btn--ghost" onClick={onLogin}>
-              I already have one
+              I have one
             </button>
           </motion.div>
 
-          <div className="lp-hero__trust">
-            <div className="lp-hero__avatars">
-              {initials.map((letter, i) => (
-                <span key={letter} style={{ background: colors[i] }}>
-                  {letter}
-                </span>
-              ))}
-            </div>
-            <p>
-              <strong>60,000+</strong> people already building their circle
-            </p>
-          </div>
+          <motion.ul className="lp-hero__facts" {...enter(0.24)}>
+            <li>Thirty seconds to sign up</li>
+            <li>No card, ever</li>
+            <li>Delete the whole account yourself</li>
+          </motion.ul>
         </div>
 
         <motion.div
-          className="lp-hero__visual"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.7, delay: 0.2 }}
+          className="lp-hero__stage"
+          initial={{ opacity: 0, y: 26, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.8, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
         >
-          <div className="lp-hero__card--ring" />
+          <AppDemo />
 
-          <motion.div
-            className="lp-hero__card lp-hero__card--chat"
-            animate={{ y: [0, -8, 0] }}
-            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <div className="lp-hero__chat-row">
-              <div className="lp-hero__bubble">is the hiking group still meeting sat?</div>
-            </div>
-            <div className="lp-hero__chat-row is-self">
-              <div className="lp-hero__bubble is-self">yep — 7am, same trailhead</div>
-            </div>
-            <div className="lp-hero__chat-row">
-              <div className="lp-hero__typing">
-                <span /><span /><span />
-              </div>
+          <motion.div className="lp-float lp-float--toast" {...float(10, 7)}>
+            <span className="lp-float__icon lp-float__icon--ember">
+              <Bell size={14} />
+            </span>
+            <div>
+              <strong>Noor is calling</strong>
+              <span>Weekend Club</span>
             </div>
           </motion.div>
 
-          <motion.div
-            className="lp-hero__card lp-hero__card--post"
-            animate={{ y: [0, 10, 0] }}
-            transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 0.4 }}
-          >
-            <div className="lp-hero__post-head">
-              <div className="lp-hero__avatar-sm" style={{ background: "#1c7a54" }}>R</div>
-              <div>
-                <div className="lp-hero__post-name">Rei · Design Circle</div>
-                <div className="lp-hero__post-time">2m ago</div>
-              </div>
-            </div>
-            <div className="lp-hero__post-body">
-              Finally shipped the rebrand. Six weeks of late nights, worth it.
-            </div>
-            <div className="lp-hero__post-stats">
-              <span>128 likes</span>
-              <span>34 comments</span>
-            </div>
-          </motion.div>
-
-          <motion.div
-            className="lp-hero__card lp-hero__card--presence"
-            animate={{ y: [0, -6, 0] }}
-            transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
-          >
-            <div className="lp-hero__presence-head">
-              <span>Design Circle</span>
-              <span className="lp-hero__live-tag">
-                <span className="lp-hero__dot" /> live
-              </span>
-            </div>
-            <div className="lp-hero__presence-list">
-              <div className="lp-hero__presence-row">
-                <span className="lp-hero__avatar-sm" style={{ background: "#e0431f" }}>M</span>
-                Maya joined the group
-              </div>
-              <div className="lp-hero__presence-row">
-                <span className="lp-hero__avatar-sm" style={{ background: "#4a463f" }}>K</span>
-                Kian started a thread
-              </div>
+          <motion.div className="lp-float lp-float--follow" {...float(8, 8.5, 0.8)}>
+            <span className="lp-float__icon lp-float__icon--signal">
+              <UserPlus size={14} />
+            </span>
+            <div>
+              <strong>Hana follows you</strong>
+              <span>2 mutuals</span>
             </div>
           </motion.div>
         </motion.div>
+      </div>
+
+      <div className="lp-wrap">
+        <motion.a
+          href="#features"
+          className="lp-hero__scroll"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.1 }}
+        >
+          <motion.span
+            {...(reduced ? {} : { animate: { y: [0, 6, 0] }, transition: { duration: 2, repeat: Infinity } })}
+          >
+            <ArrowDown size={15} />
+          </motion.span>
+          What it does
+        </motion.a>
       </div>
     </section>
   );

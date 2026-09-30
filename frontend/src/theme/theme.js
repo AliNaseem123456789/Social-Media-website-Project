@@ -56,6 +56,8 @@ export function createAppTheme(mode = "light") {
             border: `3px solid ${p.paper}`,
           },
           "img, video": { colorScheme: "normal" },
+          "@keyframes assistantSpin": { to: { transform: "rotate(360deg)" } },
+          "@keyframes assistantBlink": { "0%, 100%": { opacity: 1 }, "50%": { opacity: 0 } },
           "@keyframes pulse-dot": {
             "0%, 100%": { opacity: 1, transform: "scale(1)" },
             "50%": { opacity: 0.35, transform: "scale(0.75)" },

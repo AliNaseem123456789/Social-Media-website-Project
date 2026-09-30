@@ -45,13 +45,13 @@ export default function LoginPage() {
 
   return (
     <AuthLayout
-      title="Welcome back"
-      subtitle="Log in to catch up with your circle."
+      title="Log in"
+      subtitle="Your threads, your groups, and whatever you missed while you were out."
       footer={
         <Typography variant="body2" color="text.secondary">
-          New to Circle?{" "}
+          First time here?{" "}
           <Link component={RouterLink} to="/signup" sx={{ fontWeight: 650 }}>
-            Create an account
+            Make an account
           </Link>
         </Typography>
       }
@@ -69,7 +69,7 @@ export default function LoginPage() {
           </Box>
         </Box>
         <Button type="submit" variant="contained" size="large" disabled={submitting || !form.email || !form.password}>
-          {submitting ? "Signing in..." : "Log in"}
+          {submitting ? "Signing you in…" : "Log in"}
         </Button>
       </Stack>
     </AuthLayout>

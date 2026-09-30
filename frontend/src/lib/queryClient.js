@@ -55,7 +55,7 @@ export const queryKeys = {
 
   blockedAccounts: ["moderation", "blocks"],
   reportReasons: ["moderation", "reasons"],
-  reports: (status) => ["moderation", "reports", status],
+  reports: (status, verdict = "all") => ["moderation", "reports", status, verdict],
   moderatorAccess: ["moderation", "access"],
 
   calls: ["calls"],

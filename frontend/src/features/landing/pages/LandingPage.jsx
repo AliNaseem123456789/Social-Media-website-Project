@@ -2,11 +2,10 @@ import { useNavigate } from "react-router-dom";
 import "../../../components/LandingPage/landing.css";
 import { LandingNav } from "../../../components/LandingPage/LandingNav";
 import { Hero } from "../../../components/LandingPage/Hero";
-import { LiveTicker, StatsStrip } from "../../../components/LandingPage/ProofBar";
+import { CapabilityBand } from "../../../components/LandingPage/CapabilityBand";
+import { GraphSection } from "../../../components/LandingPage/GraphSection";
 import { Features } from "../../../components/LandingPage/Features";
 import { HowItWorks } from "../../../components/LandingPage/HowItWorks";
-import { Testimonials } from "../../../components/LandingPage/Testimonials";
-import { Pricing } from "../../../components/LandingPage/Pricing";
 import { FAQ } from "../../../components/LandingPage/FAQ";
 import { CTA } from "../../../components/LandingPage/CTA";
 import { Footer } from "../../../components/LandingPage/Footer";
@@ -22,12 +21,10 @@ export default function LandingPage() {
     <div className="lp-page">
       <LandingNav onLogin={onLogin} onSignup={onSignup} />
       <Hero onLogin={onLogin} onSignup={onSignup} />
-      <LiveTicker />
-      <StatsStrip />
+      <CapabilityBand />
       <Features />
+      <GraphSection />
       <HowItWorks />
-      <Testimonials />
-      <Pricing onSignup={onSignup} />
       <FAQ />
       <CTA onLogin={onLogin} onSignup={onSignup} />
       <Footer />

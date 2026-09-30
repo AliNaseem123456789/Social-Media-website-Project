@@ -89,9 +89,20 @@ export const moderationRepository = {
     return { created: true, id: report.id };
   },
 
-  listReports({ status }, cursor, limit) {
+  listReports({ status, verdict }, cursor, limit) {
+    // A filter rather than a sort. Ordering the queue by urgency would mean ordering by a CASE
+    // expression, and the cursor here is an id — the two do not agree, and pages would start
+    // overlapping as reports were triaged mid-scroll.
+    const triageWhere =
+      !verdict || verdict === "all"
+        ? {}
+        : verdict === "untriaged"
+          ? { triagedAt: null }
+          : { triageVerdict: verdict };
+
     return prisma.report.findMany({
       where: {
+        ...triageWhere,
         ...(status && status !== "all" ? { status } : {}),
         ...(cursor ? { id: { lt: BigInt(cursor.id) } } : {}),
       },

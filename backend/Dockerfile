@@ -11,6 +11,8 @@ WORKDIR /app
 RUN apk add --no-cache wget
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json prisma.config.js ./
+ARG DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
+ENV DATABASE_URL=$DATABASE_URL
 COPY prisma ./prisma
 COPY src ./src
 USER node

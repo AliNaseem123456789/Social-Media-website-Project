@@ -1,4 +1,5 @@
 import { memo, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import {
   Box,
@@ -54,6 +55,7 @@ const MAX_QUOTE_LENGTH = 5000;
 const softFill = (color, percent) => `color-mix(in srgb, ${color} ${percent}%, transparent)`;
 
 function ActionButton({ icon: Icon, label, count, active, activeColor, onClick, disabled, component, to }) {
+  const reduced = useReducedMotion();
   return (
     <Box
       component={component || "button"}
@@ -78,9 +80,10 @@ function ActionButton({ icon: Icon, label, count, active, activeColor, onClick, 
         fontFamily: "inherit",
         textDecoration: "none",
         transition: "background-color .15s, color .15s",
+        // Each action previews its own colour on hover, so the row reads as five distinct things.
         "&:hover": {
-          bgcolor: active ? softFill(activeColor, 10) : tokens.wash.ink,
-          color: active ? activeColor : tokens.ink,
+          bgcolor: softFill(activeColor ?? tokens.ink, active ? 14 : 8),
+          color: activeColor ?? tokens.ink,
         },
         "&:focus-visible": { outline: `2px solid ${tokens.ink}`, outlineOffset: 2 },
         "&:disabled": { opacity: 0.5, cursor: "default" },
@@ -88,8 +91,15 @@ function ActionButton({ icon: Icon, label, count, active, activeColor, onClick, 
         "& svg": { transition: "transform .12s ease" },
       }}
     >
-      <Icon size={18} strokeWidth={2} fill={active ? "currentColor" : "none"} />
-      {count !== undefined && <span>{compactNumber(count)}</span>}
+      <Box
+        component={motion.span}
+        sx={{ display: "inline-flex" }}
+        animate={reduced ? undefined : { scale: active ? [1, 1.35, 1] : 1 }}
+        transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <Icon size={18} strokeWidth={2} fill={active ? "currentColor" : "none"} />
+      </Box>
+      {count !== undefined && count > 0 && <span>{compactNumber(count)}</span>}
     </Box>
   );
 }
@@ -280,9 +290,30 @@ function PostCard({ post, detailed = false, fromSaved = false }) {
     <Card
       component="article"
       sx={{
+        position: "relative",
         p: { xs: 2, sm: 2.5 },
-        transition: "border-color .2s",
-        "&:hover": detailed ? undefined : { borderColor: tokens.inkFaint },
+        overflow: "hidden",
+        transition: "border-color .2s ease, box-shadow .2s ease, transform .2s ease",
+        "&:hover": detailed
+          ? undefined
+          : {
+              borderColor: tokens.inkFaint,
+              boxShadow: tokens.shadow.raised,
+              transform: "translateY(-2px)",
+            },
+        "&:focus-within": { borderColor: tokens.inkFaint },
+        // A pinned post carries a thin accent down its leading edge instead of relying on the chip alone.
+        ...(post.isPinned && {
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 3,
+            bgcolor: tokens.ember,
+          },
+        }),
       }}
     >
       {quoted && (
@@ -298,9 +329,9 @@ function PostCard({ post, detailed = false, fromSaved = false }) {
         </RouterLink>
 
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Stack direction="row" sx={{ alignItems: "center", gap: 1, minHeight: 42 }}>
+          <Stack direction="row" sx={{ alignItems: "center", gap: 1, minHeight: 34 }}>
             <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+              <Stack direction="row" spacing={0.75} sx={{ alignItems: "baseline", minWidth: 0 }}>
                 <Link
                   component={RouterLink}
                   to={`/u/${post.author?.id}`}
@@ -310,26 +341,40 @@ function PostCard({ post, detailed = false, fromSaved = false }) {
                 >
                   {post.author?.username}
                 </Link>
+                <Typography component="span" sx={{ color: tokens.inkFaint, fontSize: "0.85rem" }}>
+                  ·
+                </Typography>
+                <Tooltip title={fullDate(post.createdAt)} placement="bottom-start">
+                  <Typography
+                    component={RouterLink}
+                    to={postUrl}
+                    sx={{
+                      textDecoration: "none",
+                      color: tokens.inkFaint,
+                      fontSize: "0.85rem",
+                      whiteSpace: "nowrap",
+                      "&:hover": { color: tokens.inkSoft },
+                    }}
+                  >
+                    {timeAgo(post.createdAt)}
+                    {post.updatedAt && " · edited"}
+                  </Typography>
+                </Tooltip>
                 {post.isPinned && (
                   <Chip
                     icon={<Pin size={12} />}
                     label="Pinned"
                     size="small"
-                    sx={{ height: 22, bgcolor: tokens.emberTint, color: tokens.emberInk, "& .MuiChip-icon": { color: tokens.emberInk } }}
+                    sx={{
+                      height: 21,
+                      ml: 0.5,
+                      bgcolor: tokens.emberTint,
+                      color: tokens.emberInk,
+                      "& .MuiChip-icon": { color: tokens.emberInk },
+                    }}
                   />
                 )}
               </Stack>
-              <Tooltip title={fullDate(post.createdAt)} placement="bottom-start">
-                <Typography
-                  variant="caption"
-                  component={RouterLink}
-                  to={postUrl}
-                  sx={{ textDecoration: "none", color: tokens.inkFaint, "&:hover": { color: tokens.inkSoft } }}
-                >
-                  {timeAgo(post.createdAt)}
-                  {post.updatedAt && " · edited"}
-                </Typography>
-              </Tooltip>
             </Box>
 
             <IconButton size="small" onClick={(e) => setMenuAnchor(e.currentTarget)} aria-label="Post options">
@@ -340,7 +385,7 @@ function PostCard({ post, detailed = false, fromSaved = false }) {
           {post.content && (
             <Typography
               component="div"
-              sx={{ mt: 1, whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: detailed ? "1.05rem" : "0.97rem", lineHeight: 1.65 }}
+              sx={{ mt: 1.25, whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: detailed ? "1.08rem" : "1rem", lineHeight: 1.62 }}
             >
               <RichText text={text} />
               {long && !detailed && (
@@ -359,7 +404,18 @@ function PostCard({ post, detailed = false, fromSaved = false }) {
           {quoted && <QuotedPost post={quoted} />}
           {appLink && <LinkPreviewCard url={appLink} />}
 
-          <Stack direction="row" spacing={{ xs: 0, sm: 0.5 }} sx={{ mt: 1.5, ml: -1.25, flexWrap: "wrap" }}>
+          <Stack
+            direction="row"
+            spacing={{ xs: 0, sm: 0.5 }}
+            sx={{
+              mt: 1.75,
+              pt: 1.25,
+              ml: -1.25,
+              mr: -1.25,
+              flexWrap: "wrap",
+              borderTop: `1px solid ${tokens.lineSoft}`,
+            }}
+          >
             <ActionButton
               icon={Heart}
               label={post.likedByMe ? "Unlike" : "Like"}

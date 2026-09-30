@@ -1,11 +1,21 @@
 import { useEffect, useState } from "react";
+import { motion, useScroll, useSpring } from "framer-motion";
+
+const LINKS = [
+  { label: "What it does", href: "#features" },
+  { label: "How it works", href: "#how-it-works" },
+  { label: "Questions", href: "#faq" },
+];
 
 export function LandingNav({ onLogin, onSignup }) {
   const [scrolled, setScrolled] = useState(false);
+  const { scrollYProgress } = useScroll();
+  const progress = useSpring(scrollYProgress, { stiffness: 180, damping: 30, mass: 0.3 });
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
-    window.addEventListener("scroll", onScroll);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
@@ -18,10 +28,11 @@ export function LandingNav({ onLogin, onSignup }) {
         </a>
 
         <nav className="lp-nav__links">
-          <a href="#features">Features</a>
-          <a href="#how-it-works">How it works</a>
-          <a href="#pricing">Pricing</a>
-          <a href="#faq">FAQ</a>
+          {LINKS.map((link) => (
+            <a key={link.href} href={link.href}>
+              {link.label}
+            </a>
+          ))}
         </nav>
 
         <div className="lp-nav__actions">
@@ -29,10 +40,13 @@ export function LandingNav({ onLogin, onSignup }) {
             Log in
           </button>
           <button className="lp-btn lp-btn--primary lp-btn--sm" onClick={onSignup}>
-            Get started
+            Create account
           </button>
         </div>
       </div>
+
+      {/* How far down the page you are, drawn along the bottom edge of the bar. */}
+      <motion.span className="lp-nav__progress" style={{ scaleX: progress }} aria-hidden="true" />
     </header>
   );
 }

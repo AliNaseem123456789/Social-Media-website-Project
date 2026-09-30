@@ -57,11 +57,11 @@ export default function SignupPage() {
 
   return (
     <AuthLayout
-      title="Create your account"
-      subtitle="Takes about thirty seconds. No credit card."
+      title="Make an account"
+      subtitle="Thirty seconds, no card. You can delete the whole thing just as fast."
       footer={
         <Typography variant="body2" color="text.secondary">
-          Already have an account?{" "}
+          Been here before?{" "}
           <Link component={RouterLink} to="/login" sx={{ fontWeight: 650 }}>
             Log in
           </Link>
@@ -73,9 +73,9 @@ export default function SignupPage() {
         {error && <Alert severity="error">{error}</Alert>}
         <TextField label="Name" autoComplete="name" autoFocus value={form.username} onChange={set("username")} error={Boolean(errors.username)} helperText={errors.username} slotProps={{ htmlInput: { maxLength: 30 } }} />
         <TextField label="Email" type="email" autoComplete="email" value={form.email} onChange={set("email")} error={Boolean(errors.email)} helperText={errors.email} />
-        <PasswordField label="Password" autoComplete="new-password" showStrength value={form.password} onChange={set("password")} error={errors.password} helperText="8+ characters with a letter and a number" />
+        <PasswordField label="Password" autoComplete="new-password" showStrength value={form.password} onChange={set("password")} error={errors.password} helperText="At least 8 characters, with a letter and a number" />
         <Button type="submit" variant="contained" size="large" disabled={submitting}>
-          {submitting ? "Creating account..." : "Create account"}
+          {submitting ? "Setting it up…" : "Create account"}
         </Button>
         <Typography variant="caption" sx={{ textAlign: "center" }}>
           By continuing you agree to our{" "}

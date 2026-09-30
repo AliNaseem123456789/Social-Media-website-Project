@@ -2,9 +2,11 @@ import { toUserSummary, withFollowState } from "#shared/user-summary.js";
 import { toPost } from "#modules/posts/posts.presenter.js";
 import { withPostViewerState } from "#modules/posts/posts.viewer.js";
 import { hiddenUserIds } from "#shared/blocks.js";
-import { postgresSearch } from "./postgres.search.js";
+import { hybridSearch } from "./hybrid.search.js";
 
-const provider = postgresSearch;
+// Keyword search plus, when it is switched on and available, semantic search fused into it.
+// With SEMANTIC_SEARCH off this is the plain Postgres provider and nothing changes.
+const provider = hybridSearch;
 
 export const searchService = {
   async search({ q, type, limit }, viewerId) {
